@@ -1,46 +1,70 @@
-import requests
-import yt_dlp
+import subprocess
+import sys
+import json
 from pathlib import Path
+
+_WORKER_TIMEOUT = 30  # seconds per URL attempt
 
 
 def build_ir_url_candidates(ticker: str, call_date: str) -> list[str]:
-    year  = call_date[:4]
-    month = call_date[5:7]
-
-    candidates = [
-        f"https://investor.{ticker.lower()}.com/events",
-        f"https://ir.{ticker.lower()}.com/earnings",
-        f"https://investors.{ticker.lower()}.com/results",
+    t = ticker.lower()
+    return [
+        f"https://investor.{t}.com/events",
+        f"https://ir.{t}.com/earnings",
+        f"https://investors.{t}.com/results",
     ]
-    return candidates
+
+
+def _download_worker(url: str, outtmpl: str) -> bool:
+    """Run in a subprocess: returns True if file was created."""
+    import yt_dlp
+    from pathlib import Path
+
+    output_path = Path(outtmpl + ".wav")
+    ydl_opts = {
+        "format": "bestaudio/best",
+        "outtmpl": outtmpl,
+        "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "wav", "preferredquality": "192"}],
+        "quiet": True,
+        "no_warnings": True,
+        "ignoreerrors": True,
+        "nocheckcertificate": True,
+        "socket_timeout": 15,
+    }
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+    except Exception:
+        pass
+    print(json.dumps({"exists": output_path.exists()}))
 
 
 def scrape_call_audio(ticker: str, call_date: str, output_dir: str) -> str | None:
     output_path = Path(output_dir) / f"{ticker}_{call_date.replace('-', '')}.wav"
-
     if output_path.exists():
         return str(output_path)
 
-    ydl_opts = {
-        "format": "bestaudio/best",
-        "outtmpl": str(output_path.with_suffix("")),
-        "postprocessors": [{
-            "key": "FFmpegExtractAudio",
-            "preferredcodec": "wav",
-            "preferredquality": "192",
-        }],
-        "quiet": True,
-        "no_warnings": True,
-        "ignoreerrors": True,
-    }
+    outtmpl = str(output_path.with_suffix(""))
 
     for url in build_ir_url_candidates(ticker, call_date):
+        code = (
+            f"import sys; sys.path.insert(0, {repr(str(Path(__file__).parent.parent.parent))})\n"
+            f"from src.data_pipeline.maec_audio_scraper import _download_worker\n"
+            f"_download_worker({repr(url)}, {repr(outtmpl)})\n"
+        )
         try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([url])
-            if output_path.exists():
-                return str(output_path)
-        except Exception:
+            proc = subprocess.run(
+                [sys.executable, "-c", code],
+                timeout=_WORKER_TIMEOUT,
+                capture_output=True,
+                text=True,
+            )
+            last_line = proc.stdout.strip().splitlines()[-1] if proc.stdout.strip() else ""
+            if last_line:
+                result = json.loads(last_line)
+                if result.get("exists"):
+                    return str(output_path)
+        except (subprocess.TimeoutExpired, Exception):
             continue
 
     return None
@@ -51,10 +75,7 @@ def batch_download_maec_audio(calls: list[dict], output_dir: str) -> dict:
     results = {"success": [], "failed": []}
 
     for call in calls:
-        try:
-            path = scrape_call_audio(call["ticker"], call["call_date"], output_dir)
-        except Exception:
-            path = None
+        path = scrape_call_audio(call["ticker"], call["call_date"], output_dir)
         if path:
             call["audio_path"] = path
             results["success"].append(call["call_id"])
