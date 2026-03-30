@@ -1,0 +1,65 @@
+paths:
+  maec_root: data/raw/maec
+  audio_raw: data/raw/audio_raw
+  prices: data/raw/prices
+  transcripts: data/processed/transcripts
+  audio_normalized: data/processed/audio_normalized
+  diarization: data/processed/diarization
+  whisperx_aligned: data/processed/whisperx_aligned
+  audio_features: data/processed/audio_features
+  text_embeddings: data/processed/text_embeddings
+  maec_lld_processed: data/processed/maec_lld_processed
+  labels: data/processed/labels
+  splits: data/splits
+
+audio:
+  target_sr: 16000
+  target_lufs: -23.0
+  min_snr_db: 10.0
+  trim_top_db: 20
+
+features:
+  feature_set: egemaps
+  min_duration_s: 1.5
+  pca_components: 64
+
+text:
+  finbert_model: ProsusAI/finbert
+  max_length: 512
+
+labels:
+  estimation_window: 200
+  event_windows: [1, 3, 7]
+  primary_target: abnormal_vol_3d
+
+splits:
+  maec:
+    train: ["2007-01-01", "2015-12-31"]
+    val: ["2016-01-01", "2017-12-31"]
+    test: ["2018-01-01", "2020-06-30"]
+  ours:
+    train: ["2007-01-01", "2016-12-31"]
+    val: ["2017-01-01", "2018-12-31"]
+    test: ["2019-01-01", "2020-06-30"]
+
+model:
+  audio_dim: 88
+  text_dim: 768
+  hidden_dim: 256
+  n_heads: 4
+  n_structured: 5
+  dropout: 0.2
+
+training:
+  batch_size: 16
+  lr: 0.0002
+  finbert_lr: 0.00002
+  weight_decay: 0.01
+  max_epochs: 100
+  patience: 10
+  gradient_clip: 1.0
+  loss_mse_weight: 0.7
+  loss_rank_weight: 0.3
+  finbert_unfreeze_epoch: 5
+  warmup_pct: 0.05
+  seed: 42
