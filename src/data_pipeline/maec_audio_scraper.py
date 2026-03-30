@@ -31,6 +31,7 @@ def scrape_call_audio(ticker: str, call_date: str, output_dir: str) -> str | Non
         }],
         "quiet": True,
         "no_warnings": True,
+        "ignoreerrors": True,
     }
 
     for url in build_ir_url_candidates(ticker, call_date):
@@ -50,7 +51,10 @@ def batch_download_maec_audio(calls: list[dict], output_dir: str) -> dict:
     results = {"success": [], "failed": []}
 
     for call in calls:
-        path = scrape_call_audio(call["ticker"], call["call_date"], output_dir)
+        try:
+            path = scrape_call_audio(call["ticker"], call["call_date"], output_dir)
+        except Exception:
+            path = None
         if path:
             call["audio_path"] = path
             results["success"].append(call["call_id"])

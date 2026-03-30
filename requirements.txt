@@ -3,7 +3,7 @@ transformers>=4.40.0
 datasets
 accelerate
 
-opensmile>=3.0
+opensmile>=2.4
 librosa>=0.10
 soundfile
 pyloudnorm

@@ -1,2 +1,30 @@
 .env
 solution.md
+
+# data
+data/raw/
+data/processed/
+data/splits/
+
+# python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# env
+venv/
+.venv/
+*.env
+
+# jupyter
+.ipynb_checkpoints/
+
+# tools
+.wandb/
+wandb/
