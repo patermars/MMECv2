@@ -1,48 +1,45 @@
 # MMEC v2 — Multi-Modal Earnings Call Analysis
 
-Predicts post-earnings abnormal volatility from multi-modal features (audio + text + structured) extracted from the MAEC dataset.
+Predicts post-earnings abnormal volatility from multi-modal features (audio + text + structured) extracted from the ACL19 earnings call dataset (Qin & Yang, ACL 2019).
 
 ## Quick Start
 
 ### 1. Setup Environment
 
 ```bash
-# Create virtual environment
 python -m venv venv
-venv\Scripts\activate          # Windows
-# source venv/bin/activate     # Linux/Mac
+source venv/bin/activate          # Linux/Mac
+# venv\Scripts\activate           # Windows
 
-# Install dependencies
 pip install -r requirements.txt
 
-# Copy and fill environment variables
-copy .env.example .env
+cp .env.example .env
 # Edit .env with your HuggingFace token and (optional) W&B key
 ```
 
-### 2. Get MAEC Dataset
+### 2. Get ACL19 Dataset
+
+Download from [Google Drive](https://drive.google.com/drive/folders/1BKCANORbcmUJKkOkBOghw6uNHPqS_az1), then:
 
 ```bash
-# Clone into data/raw/maec/
-git clone https://github.com/Earnings-Call-Dataset/MAEC-A-Multimodal-Aligned-Earnings-Conference-Call-Dataset-for-Financial-Risk-Prediction.git data/raw/maec
+zip -s0 ACL19_Release.zip --out ACL19_Release_All.zip
+unzip -q ACL19_Release_All.zip
+# Results in: ACL19_Release/{CompanyName_YYYYMMDD}/CEO/*.mp3 + TextSequence.txt
 ```
+
+Optionally place a `{company: ticker}` JSON map at `data/raw/ticker_map.json` for accurate ticker resolution.
 
 ### 3. Run the Pipeline
 
-Each phase runs independently. Run them in order:
-
 ```bash
-# Phase 0 — Parse MAEC transcripts
-python run_pipeline.py --phase 0
+# Phase 0 — Parse ACL19 dataset (text + audio paths)
+python run_pipeline.py --phase 0 --acl19-root /path/to/ACL19_Release
 
-# Phase 1 — Download audio from IR pages (slow, expect ~60% success)
+# Phase 1 — Build volatility labels from yfinance
 python run_pipeline.py --phase 1
 
-# Phase 4 — Build volatility labels from yfinance
-python run_pipeline.py --phase 4
-
-# Phase 5 — Create temporal train/val/test splits
-python run_pipeline.py --phase 5
+# Phase 2 — Assemble full dataset (features + labels + splits)
+python run_pipeline.py --phase 2
 ```
 
 ### 4. Train Models
@@ -72,18 +69,13 @@ MMECv2/
 │   └── default.yaml              # All hyperparameters and paths
 ├── src/
 │   ├── data_pipeline/
-│   │   ├── maec_parser.py        # Parse MAEC transcripts + LLD features
-│   │   ├── maec_audio_scraper.py # Download audio from IR pages
-│   │   ├── audio_preprocessor.py # 16kHz mono, EBU R128 normalization
-│   │   ├── diarization.py        # Speaker-first pyannote + WhisperX alignment
-│   │   ├── whisperx_aligner.py   # Forced alignment (text → timestamps)
-│   │   ├── feature_extractor.py  # eGeMAPS (88-dim) utterance features
-│   │   ├── maec_text_cleaner.py  # OCR cleanup + section segmentation
-│   │   ├── text_encoder.py       # FinBERT CLS embeddings (768-dim)
-│   │   ├── linguistic_features.py# Loughran-McDonald sentiment (7-dim)
+│   │   ├── acl19_parser.py       # Parse ACL19 folders → call records
 │   │   ├── label_builder.py      # Event-study OLS + earnings surprise
-│   │   ├── dataset_assembler.py  # Merge all outputs + temporal splits
-│   │   └── dataset_validator.py  # Shape/NaN/distribution checks
+│   │   ├── dataset_assembler.py  # Merge features + labels + temporal splits
+│   │   ├── dataset_validator.py  # Shape/NaN/distribution checks
+│   │   ├── feature_extractor.py  # eGeMAPS (88-dim) utterance features
+│   │   ├── text_encoder.py       # FinBERT CLS embeddings (768-dim)
+│   │   └── linguistic_features.py# Loughran-McDonald sentiment (7-dim)
 │   ├── models/
 │   │   ├── hierarchical_encoder.py   # 3-level cross-modal attention
 │   │   ├── volatility_head.py        # Regression head
@@ -107,9 +99,8 @@ MMECv2/
 
 ## Key Design Decisions
 
-- **eGeMAPS (88 features)** over ComParE (6,373) — better suited for ~900-call dataset
-- **Speaker-first diarization** — pyannote runs first, then WhisperX aligns text within each speaker segment
-- **Forced alignment** — MAEC text is ground truth; WhisperX assigns timestamps, not re-transcribe
+- **ACL19 dataset** — CEO-only sentence-level audio aligned with text; no diarization needed
+- **eGeMAPS (88 features)** over ComParE (6,373) — better suited for ~500-call dataset
 - **Event-study OLS** with proper α + β estimation over 200-day window
 - **Earnings surprise** included as confounder in all experiment variants
 - **Primary metric**: Spearman rank correlation (ρ)
@@ -118,17 +109,17 @@ MMECv2/
 ## Requirements
 
 - Python 3.10+
-- CUDA GPU (recommended for pyannote, WhisperX, FinBERT)
-- ffmpeg (required by whisperx/yt-dlp)
-- HuggingFace token with pyannote model access
+- CUDA GPU (recommended for FinBERT)
+- ffmpeg
+- HuggingFace token (for pyannote model access if needed)
 
 ## Citation
 
 ```bibtex
-@inproceedings{CIKM2020MAEC,
-  author    = {Li, Jiazheng and Yang, Linyi and Smyth, Barry and Dong, Ruihai},
-  title     = {MAEC: A Multimodal Aligned Earnings Conference Call Dataset},
-  booktitle = {CIKM '20},
-  year      = {2020},
+@inproceedings{qin-yang-2019-say,
+  author    = {Qin, Yu and Yang, Yi},
+  title     = {What You Say and How You Say It Matters: Predicting Financial Risk Using Verbal and Vocal Cues},
+  booktitle = {ACL 2019},
+  year      = {2019},
 }
 ```

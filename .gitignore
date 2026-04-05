@@ -6,6 +6,13 @@ data/raw/
 data/processed/
 data/splits/
 
+# documents
+*.doc
+*.docx
+*.odt
+*.pdf
+*.rtf
+
 # python
 __pycache__/
 *.pyc
@@ -28,3 +35,6 @@ venv/
 # tools
 .wandb/
 wandb/
+
+#dataset
+ACL19_Release/

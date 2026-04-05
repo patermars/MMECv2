@@ -8,7 +8,8 @@ librosa>=0.10
 soundfile
 pyloudnorm
 praat-parselmouth
-whisperx
+ctranslate2>=4.6.1
+# whisperx: install manually: pip install whisperx --ignore-requires-python
 pyannote.audio>=3.0
 
 pysentiment2
