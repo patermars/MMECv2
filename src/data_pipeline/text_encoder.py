@@ -16,7 +16,7 @@ def _get_model_and_tokenizer():
 
 
 @torch.no_grad()
-def encode_utterance(text: str, device: str = "cuda") -> torch.Tensor:
+def encode_utterance(text: str, device: str = "cpu") -> torch.Tensor:
     tokenizer, model = _get_model_and_tokenizer()
     model.to(device).eval()
     tokens  = tokenizer(text, return_tensors="pt",
@@ -26,7 +26,7 @@ def encode_utterance(text: str, device: str = "cuda") -> torch.Tensor:
 
 
 @torch.no_grad()
-def encode_batch(texts: list[str], device: str = "cuda",
+def encode_batch(texts: list[str], device: str = "cpu",
                  batch_size: int = 32) -> np.ndarray:
     tokenizer, model = _get_model_and_tokenizer()
     model.to(device).eval()

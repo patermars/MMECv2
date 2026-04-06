@@ -28,6 +28,7 @@ build/
 venv/
 .venv/
 *.env
+mmecv2/
 
 # jupyter
 .ipynb_checkpoints/
