@@ -19,36 +19,15 @@ def load_config(config_path: str = "configs/default.yaml") -> dict:
 
 
 def build_dataloaders(config: dict):
-    tc = config.get("training", {})
-    batch_size = tc.get("batch_size", 16)
-
+    batch_size = config.get("training", {}).get("batch_size", 16)
     train_ds = EarningsCallDataset(f"{SPLITS_DIR}/train.csv", CHECKPOINT_DIR, LABELS_CSV)
     val_ds   = EarningsCallDataset(f"{SPLITS_DIR}/val.csv",   CHECKPOINT_DIR, LABELS_CSV)
     test_ds  = EarningsCallDataset(f"{SPLITS_DIR}/test.csv",  CHECKPOINT_DIR, LABELS_CSV)
-
     print(f"Dataset sizes — train: {len(train_ds)}, val: {len(val_ds)}, test: {len(test_ds)}")
-
     train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True,  collate_fn=collate_calls, num_workers=0)
     val_loader   = DataLoader(val_ds,   batch_size=batch_size, shuffle=False, collate_fn=collate_calls, num_workers=0)
     test_loader  = DataLoader(test_ds,  batch_size=batch_size, shuffle=False, collate_fn=collate_calls, num_workers=0)
-
     return train_loader, val_loader, test_loader
-
-
-def run_single_experiment(config: dict, exp_id: str, device: str):
-    from src.training.ablation_runner import AblationRunner
-    print(f"Running experiment: {exp_id}")
-    train_loader, val_loader, test_loader = build_dataloaders(config)
-    runner = AblationRunner(config, device)
-    runner.run_experiment(exp_id, train_loader, val_loader, test_loader)
-
-
-def run_ablation(config: dict, device: str, experiments: list = None):
-    from src.training.ablation_runner import AblationRunner
-    print(f"Running ablation study on device: {device}")
-    train_loader, val_loader, test_loader = build_dataloaders(config)
-    runner = AblationRunner(config, device)
-    runner.run_all(train_loader, val_loader, test_loader, experiments=experiments)
 
 
 def run_training(config: dict, device: str):
@@ -64,9 +43,7 @@ def run_training(config: dict, device: str):
         n_heads=mc.get("n_heads", 4),
         n_structured=mc.get("n_structured", 5),
     )
-
-    total_params = sum(p.numel() for p in model.parameters())
-    print(f"Model parameters: {total_params:,} total")
+    print(f"Model parameters: {sum(p.numel() for p in model.parameters()):,} total")
 
     train_loader, val_loader, _ = build_dataloaders(config)
     trainer = Trainer(model, train_loader, val_loader, config, device=device)
@@ -74,25 +51,34 @@ def run_training(config: dict, device: str):
     print(f"\nTraining complete. Best Spearman ρ: {results['best_spearman']:.4f}")
 
 
+def run_ablation(config: dict, device: str, experiments: list = None):
+    from src.training.ablation_runner import AblationRunner
+    print(f"Running ablation study on device: {device}")
+    train_loader, val_loader, test_loader = build_dataloaders(config)
+    runner = AblationRunner(config, device)
+    runner.run_all(train_loader, val_loader, test_loader, experiments=experiments)
+
+
+def run_single_experiment(config: dict, exp_id: str, device: str):
+    from src.training.ablation_runner import AblationRunner
+    print(f"Running experiment: {exp_id}")
+    train_loader, val_loader, test_loader = build_dataloaders(config)
+    runner = AblationRunner(config, device)
+    runner.run_experiment(exp_id, train_loader, val_loader, test_loader)
+
+
 def main():
     parser = argparse.ArgumentParser(description="MMEC v2 Training")
     parser.add_argument("--mode", type=str, default="train",
-                        choices=["train", "ablation", "single"],
-                        help="Training mode")
-    parser.add_argument("--exp-id", type=str, default="EXP-08",
-                        help="Experiment ID (for single mode)")
-    parser.add_argument("--config", type=str, default="configs/default.yaml",
-                        help="Config file path")
-    parser.add_argument("--device", type=str, default=None,
-                        help="Device (cuda/cpu)")
-    parser.add_argument("--experiments", nargs="+", default=None,
-                        help="Specific experiments to run (for ablation mode)")
+                        choices=["train", "ablation", "single"])
+    parser.add_argument("--exp-id", type=str, default="EXP-08")
+    parser.add_argument("--config", type=str, default="configs/default.yaml")
+    parser.add_argument("--device", type=str, default=None)
+    parser.add_argument("--experiments", nargs="+", default=None)
     args = parser.parse_args()
 
     config = load_config(args.config)
-
     device = args.device or ("cuda" if torch.cuda.is_available() else "cpu")
-
     torch.manual_seed(config.get("training", {}).get("seed", 42))
 
     if args.mode == "train":

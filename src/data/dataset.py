@@ -13,8 +13,17 @@ from torch.utils.data import Dataset
 STRUCTURED_COLS = ["estimation_beta", "earnings_surprise", "market_cap_log", "vix_at_call", "hist_vol_30d"]
 
 
+def _safe_float(val):
+    """Return float(val) or 0.0 if val is NaN/None."""
+    try:
+        v = float(val)
+        return 0.0 if np.isnan(v) else v
+    except (TypeError, ValueError):
+        return 0.0
+
+
 def _load_checkpoint(path: Path) -> dict:
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         record = json.load(f)
     for u in record["utterances"]:
         u["text_embedding"] = np.array(u["text_embedding"], dtype=np.float32)
@@ -24,7 +33,6 @@ def _load_checkpoint(path: Path) -> dict:
 
 
 def _split_utterances(utterances):
-    """Split utterances into remarks (first half) and QA (second half)."""
     mid = max(1, len(utterances) // 2)
     return utterances[:mid], utterances[mid:]
 
@@ -41,13 +49,18 @@ class EarningsCallDataset(Dataset):
         self.labels_df = pd.read_csv(labels_csv)
 
         split_df = pd.read_csv(split_csv)
-        # Keep only calls that have a checkpoint and a valid label
         valid = []
         for call_id in split_df["call_id"].tolist():
             ckpt = self.checkpoint_dir / f"{call_id}.json"
             row  = self.labels_df[self.labels_df["call_id"] == call_id]
-            if ckpt.exists() and not row.empty and not pd.isna(row.iloc[0].get("abnormal_vol_3d")):
+            if not ckpt.exists() or row.empty or pd.isna(row.iloc[0]["abnormal_vol_3d"]):
+                continue
+            try:
+                with open(ckpt, encoding="utf-8") as f:
+                    json.load(f)
                 valid.append(call_id)
+            except (PermissionError, OSError, json.JSONDecodeError):
+                print(f"  [dataset] Skipping unreadable checkpoint: {call_id}")
         self.call_ids = valid
 
         self._structured_mean, self._structured_std = self._compute_stats()
@@ -58,7 +71,7 @@ class EarningsCallDataset(Dataset):
             row = self.labels_df[self.labels_df["call_id"] == call_id]
             if row.empty:
                 continue
-            vals.append([float(row.iloc[0].get(c) or 0) for c in STRUCTURED_COLS])
+            vals.append([_safe_float(row.iloc[0][c]) for c in STRUCTURED_COLS])
         if not vals:
             return np.zeros(len(STRUCTURED_COLS), dtype=np.float32), np.ones(len(STRUCTURED_COLS), dtype=np.float32)
         arr = np.array(vals, dtype=np.float32)
@@ -68,9 +81,14 @@ class EarningsCallDataset(Dataset):
         return len(self.call_ids)
 
     def __getitem__(self, idx):
-        call_id = self.call_ids[idx]
-        record  = _load_checkpoint(self.checkpoint_dir / f"{call_id}.json")
-        utts    = record["utterances"]
+        call_id   = self.call_ids[idx]
+        try:
+            record = _load_checkpoint(self.checkpoint_dir / f"{call_id}.json")
+        except (PermissionError, OSError, json.JSONDecodeError) as e:
+            # Fall back to a neighbouring sample rather than crashing the epoch
+            print(f"  [dataset] Read error on {call_id}: {e}, using idx 0")
+            return self.__getitem__(0)
+        utts      = record["utterances"]
 
         remarks_utts, qa_utts = _split_utterances(utts)
         if not remarks_utts:
@@ -82,9 +100,9 @@ class EarningsCallDataset(Dataset):
         qa_audio,      qa_text      = _utt_to_arrays(qa_utts)
 
         label_row  = self.labels_df[self.labels_df["call_id"] == call_id].iloc[0]
-        label      = float(label_row.get("abnormal_vol_3d") or 0)
+        label      = _safe_float(label_row["abnormal_vol_3d"])
         structured = np.array(
-            [float(label_row.get(c) or 0) for c in STRUCTURED_COLS], dtype=np.float32
+            [_safe_float(label_row[c]) for c in STRUCTURED_COLS], dtype=np.float32
         )
         structured = (structured - self._structured_mean) / self._structured_std
 
