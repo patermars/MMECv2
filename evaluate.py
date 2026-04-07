@@ -172,7 +172,7 @@ def main():
     batch_size = config.get("training", {}).get("batch_size", 64)
     ds     = EarningsCallDataset(f"{SPLITS_DIR}/{args.split}.csv", "data/processed/checkpoints", LABELS_CSV)
     loader = DataLoader(ds, batch_size=batch_size, shuffle=False,
-                        collate_fn=collate_calls, num_workers=2, pin_memory=(device == "cuda"))
+                        collate_fn=collate_calls, num_workers=0, pin_memory=(device == "cuda"))
     print(f"Evaluating on {args.split} set: {len(ds)} samples")
 
     # ── inference ─────────────────────────────────────────────────────────────
