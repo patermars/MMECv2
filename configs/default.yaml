@@ -45,12 +45,12 @@ model:
 
 training:
   device:              cpu   # auto-detected: cuda if available, else cpu
-  batch_size:          16
-  lr:                  0.0002
+  batch_size:          64
+  lr:                  0.0001
   finbert_lr:          0.00002
   weight_decay:        0.01
   max_epochs:          100
-  patience:            10
+  patience:            15
   gradient_clip:       1.0
   loss_mse_weight:     0.7
   loss_rank_weight:    0.3

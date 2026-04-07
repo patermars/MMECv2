@@ -18,15 +18,20 @@ def load_config(config_path: str = "configs/default.yaml") -> dict:
         return yaml.safe_load(f)
 
 
-def build_dataloaders(config: dict):
-    batch_size = config.get("training", {}).get("batch_size", 16)
+def build_datasets(config: dict):
     train_ds = EarningsCallDataset(f"{SPLITS_DIR}/train.csv", CHECKPOINT_DIR, LABELS_CSV)
     val_ds   = EarningsCallDataset(f"{SPLITS_DIR}/val.csv",   CHECKPOINT_DIR, LABELS_CSV)
     test_ds  = EarningsCallDataset(f"{SPLITS_DIR}/test.csv",  CHECKPOINT_DIR, LABELS_CSV)
     print(f"Dataset sizes — train: {len(train_ds)}, val: {len(val_ds)}, test: {len(test_ds)}")
-    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True,  collate_fn=collate_calls, num_workers=0)
-    val_loader   = DataLoader(val_ds,   batch_size=batch_size, shuffle=False, collate_fn=collate_calls, num_workers=0)
-    test_loader  = DataLoader(test_ds,  batch_size=batch_size, shuffle=False, collate_fn=collate_calls, num_workers=0)
+    return train_ds, val_ds, test_ds
+
+
+def build_dataloaders(config: dict):
+    batch_size = config.get("training", {}).get("batch_size", 16)
+    train_ds, val_ds, test_ds = build_datasets(config)
+    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True,  collate_fn=collate_calls, num_workers=2, pin_memory=True)
+    val_loader   = DataLoader(val_ds,   batch_size=batch_size, shuffle=False, collate_fn=collate_calls, num_workers=2, pin_memory=True)
+    test_loader  = DataLoader(test_ds,  batch_size=batch_size, shuffle=False, collate_fn=collate_calls, num_workers=2, pin_memory=True)
     return train_loader, val_loader, test_loader
 
 
@@ -54,17 +59,17 @@ def run_training(config: dict, device: str):
 def run_ablation(config: dict, device: str, experiments: list = None):
     from src.training.ablation_runner import AblationRunner
     print(f"Running ablation study on device: {device}")
-    train_loader, val_loader, test_loader = build_dataloaders(config)
-    runner = AblationRunner(config, device)
-    runner.run_all(train_loader, val_loader, test_loader, experiments=experiments)
+    train_ds, val_ds, test_ds = build_datasets(config)
+    runner = AblationRunner(train_ds, val_ds, test_ds, config, device)
+    runner.run_all(experiments)
 
 
 def run_single_experiment(config: dict, exp_id: str, device: str):
     from src.training.ablation_runner import AblationRunner
     print(f"Running experiment: {exp_id}")
-    train_loader, val_loader, test_loader = build_dataloaders(config)
-    runner = AblationRunner(config, device)
-    runner.run_experiment(exp_id, train_loader, val_loader, test_loader)
+    train_ds, val_ds, test_ds = build_datasets(config)
+    runner = AblationRunner(train_ds, val_ds, test_ds, config, device)
+    runner.run_experiment(exp_id)
 
 
 def main():

@@ -7,8 +7,8 @@ class HierarchicalMultimodalEncoder(nn.Module):
                  n_heads=4, n_structured=5):
         super().__init__()
 
-        self.audio_proj = nn.Linear(audio_dim, hidden_dim)
-        self.text_proj  = nn.Linear(text_dim,  hidden_dim)
+        self.audio_proj = nn.Sequential(nn.Linear(audio_dim, hidden_dim), nn.LayerNorm(hidden_dim))
+        self.text_proj  = nn.Sequential(nn.Linear(text_dim,  hidden_dim), nn.LayerNorm(hidden_dim))
         self.utterance_cross_attn = nn.MultiheadAttention(
             embed_dim=hidden_dim, num_heads=n_heads, batch_first=True
         )
@@ -72,27 +72,22 @@ class HierarchicalMultimodalEncoder(nn.Module):
 
 
 def collate_calls(batch: list[dict]) -> dict:
-    def pad_section(seqs):
+    import numpy as np
+
+    def pad_section(key):
+        seqs    = [np.asarray(b[key], dtype=np.float32) for b in batch]
         max_len = max(s.shape[0] for s in seqs)
-        padded  = torch.zeros(len(seqs), max_len, seqs[0].shape[1])
-        mask    = torch.ones(len(seqs), max_len, dtype=torch.bool)
+        padded  = np.zeros((len(seqs), max_len, seqs[0].shape[1]), dtype=np.float32)
+        mask    = np.ones((len(seqs), max_len), dtype=bool)
         for i, s in enumerate(seqs):
             padded[i, :s.shape[0]] = s
             mask[i, :s.shape[0]]   = False
-        return padded, mask
+        return torch.from_numpy(padded), torch.from_numpy(mask)
 
-    remarks_audio, remarks_mask = pad_section(
-        [torch.tensor(b["remarks_audio"], dtype=torch.float32) for b in batch]
-    )
-    remarks_text, _ = pad_section(
-        [torch.tensor(b["remarks_text"], dtype=torch.float32) for b in batch]
-    )
-    qa_audio, qa_mask = pad_section(
-        [torch.tensor(b["qa_audio"], dtype=torch.float32) for b in batch]
-    )
-    qa_text, _ = pad_section(
-        [torch.tensor(b["qa_text"], dtype=torch.float32) for b in batch]
-    )
+    remarks_audio, remarks_mask = pad_section("remarks_audio")
+    remarks_text,  _            = pad_section("remarks_text")
+    qa_audio,      qa_mask      = pad_section("qa_audio")
+    qa_text,       _            = pad_section("qa_text")
 
     return {
         "remarks_audio": remarks_audio,
@@ -101,6 +96,6 @@ def collate_calls(batch: list[dict]) -> dict:
         "qa_audio":      qa_audio,
         "qa_text":       qa_text,
         "qa_mask":       qa_mask,
-        "structured":    torch.tensor([b["structured"] for b in batch], dtype=torch.float32),
-        "labels":        torch.tensor([b["label"] for b in batch], dtype=torch.float32),
+        "structured":    torch.from_numpy(np.array([b["structured"] for b in batch], dtype=np.float32)),
+        "labels":        torch.from_numpy(np.array([b["label"]      for b in batch], dtype=np.float32)),
     }

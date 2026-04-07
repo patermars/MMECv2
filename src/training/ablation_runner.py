@@ -129,11 +129,14 @@ class AblationRunner:
         collate_fn = collate_calls if ABLATION_CONFIGS[exp_id].get("fusion") == "hierarchical" else None
 
         train_loader = DataLoader(self.train_data, batch_size=batch_size,
-                                  shuffle=True, collate_fn=collate_fn)
+                                  shuffle=True, collate_fn=collate_fn,
+                                  num_workers=2, pin_memory=True)
         val_loader = DataLoader(self.val_data, batch_size=batch_size,
-                                collate_fn=collate_fn)
+                                collate_fn=collate_fn,
+                                num_workers=2, pin_memory=True)
         test_loader = DataLoader(self.test_data, batch_size=batch_size,
-                                 collate_fn=collate_fn)
+                                 collate_fn=collate_fn,
+                                 num_workers=2, pin_memory=True)
 
         trainer = Trainer(model, train_loader, val_loader, self.config, self.device)
         train_result = trainer.train()

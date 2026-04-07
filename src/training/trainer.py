@@ -37,8 +37,12 @@ class Trainer:
         )
 
         total_steps = self.max_epochs * len(train_loader)
-        self.scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
-            self.optimizer, T_0=max(total_steps // 5, 1)
+        self.scheduler = torch.optim.lr_scheduler.OneCycleLR(
+            self.optimizer,
+            max_lr=tc.get("lr", 2e-4),
+            total_steps=total_steps,
+            pct_start=self.warmup_pct,
+            anneal_strategy="cos",
         )
 
         self.best_spearman = -1.0
@@ -65,6 +69,10 @@ class Trainer:
 
             loss_dict = self.criterion(preds, labels)
             loss = loss_dict["total"]
+
+            if not torch.isfinite(loss):
+                self.scheduler.step()
+                continue
 
             self.optimizer.zero_grad()
             loss.backward()
@@ -121,11 +129,17 @@ class Trainer:
                     **{f"val/{k}": v for k, v in val_metrics.items()},
                 })
 
-            if val_metrics["spearman_rho"] > self.best_spearman:
-                self.best_spearman = val_metrics["spearman_rho"]
+            val_rho = val_metrics["spearman_rho"]
+            if not np.isfinite(val_rho):
+                print(f"Early stopping at epoch {epoch+1} — NaN val metrics")
+                break
+
+            if val_rho > self.best_spearman:
+                self.best_spearman = val_rho
                 self.best_state = {k: v.cpu().clone() for k, v in
                                    self.model.state_dict().items()}
                 self.patience_counter = 0
+                self.save_checkpoint("data/processed/checkpoints/best_model.pt")
             else:
                 self.patience_counter += 1
                 if self.patience_counter >= self.patience:
