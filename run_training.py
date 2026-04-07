@@ -2,9 +2,15 @@ import argparse
 import yaml
 import torch
 from dotenv import load_dotenv
-import os
+from torch.utils.data import DataLoader
+from src.models.hierarchical_encoder import collate_calls
+from src.data.dataset import EarningsCallDataset
 
 load_dotenv()
+
+CHECKPOINT_DIR = "data/processed/checkpoints"
+LABELS_CSV     = "data/processed/labels/labels.csv"
+SPLITS_DIR     = "data/splits"
 
 
 def load_config(config_path: str = "configs/default.yaml") -> dict:
@@ -12,24 +18,43 @@ def load_config(config_path: str = "configs/default.yaml") -> dict:
         return yaml.safe_load(f)
 
 
+def build_dataloaders(config: dict):
+    tc = config.get("training", {})
+    batch_size = tc.get("batch_size", 16)
+
+    train_ds = EarningsCallDataset(f"{SPLITS_DIR}/train.csv", CHECKPOINT_DIR, LABELS_CSV)
+    val_ds   = EarningsCallDataset(f"{SPLITS_DIR}/val.csv",   CHECKPOINT_DIR, LABELS_CSV)
+    test_ds  = EarningsCallDataset(f"{SPLITS_DIR}/test.csv",  CHECKPOINT_DIR, LABELS_CSV)
+
+    print(f"Dataset sizes — train: {len(train_ds)}, val: {len(val_ds)}, test: {len(test_ds)}")
+
+    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True,  collate_fn=collate_calls, num_workers=0)
+    val_loader   = DataLoader(val_ds,   batch_size=batch_size, shuffle=False, collate_fn=collate_calls, num_workers=0)
+    test_loader  = DataLoader(test_ds,  batch_size=batch_size, shuffle=False, collate_fn=collate_calls, num_workers=0)
+
+    return train_loader, val_loader, test_loader
+
+
 def run_single_experiment(config: dict, exp_id: str, device: str):
     from src.training.ablation_runner import AblationRunner
     print(f"Running experiment: {exp_id}")
-    print(f"Device: {device}")
-    print("NOTE: You must provide train/val/test datasets as PyTorch datasets.")
-    print("This requires running the data pipeline first (run_pipeline.py).")
+    train_loader, val_loader, test_loader = build_dataloaders(config)
+    runner = AblationRunner(config, device)
+    runner.run_experiment(exp_id, train_loader, val_loader, test_loader)
 
 
 def run_ablation(config: dict, device: str, experiments: list = None):
     from src.training.ablation_runner import AblationRunner
     print(f"Running ablation study on device: {device}")
-    print("NOTE: You must provide train/val/test datasets as PyTorch datasets.")
-    print("This requires running the data pipeline first (run_pipeline.py).")
+    train_loader, val_loader, test_loader = build_dataloaders(config)
+    runner = AblationRunner(config, device)
+    runner.run_all(train_loader, val_loader, test_loader, experiments=experiments)
 
 
 def run_training(config: dict, device: str):
     print("=== Training Full Model (EXP-08) ===")
     from src.models.hierarchical_encoder import HierarchicalMultimodalEncoder
+    from src.training.trainer import Trainer
 
     mc = config.get("model", {})
     model = HierarchicalMultimodalEncoder(
@@ -41,10 +66,12 @@ def run_training(config: dict, device: str):
     )
 
     total_params = sum(p.numel() for p in model.parameters())
-    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print(f"Model parameters: {total_params:,} total, {trainable_params:,} trainable")
-    print("NOTE: Provide DataLoaders to Trainer class to begin training.")
-    print("See README.md for usage instructions.")
+    print(f"Model parameters: {total_params:,} total")
+
+    train_loader, val_loader, _ = build_dataloaders(config)
+    trainer = Trainer(model, train_loader, val_loader, config, device=device)
+    results = trainer.train()
+    print(f"\nTraining complete. Best Spearman ρ: {results['best_spearman']:.4f}")
 
 
 def main():
