@@ -20,10 +20,10 @@ class Trainer:
 
         tc = config.get("training", {})
         self.max_epochs = tc.get("max_epochs", 100)
-        self.patience = tc.get("patience", 10)
+        self.patience = tc.get("patience", 20)
         self.gradient_clip = tc.get("gradient_clip", 1.0)
         self.finbert_unfreeze_epoch = tc.get("finbert_unfreeze_epoch", 5)
-        self.warmup_pct = tc.get("warmup_pct", 0.05)
+        self.warmup_pct = tc.get("warmup_pct", 0.1)
 
         self.criterion = CombinedLoss(
             mse_weight=tc.get("loss_mse_weight", 0.7),
@@ -32,14 +32,14 @@ class Trainer:
 
         self.optimizer = torch.optim.AdamW(
             model.parameters(),
-            lr=tc.get("lr", 2e-4),
-            weight_decay=tc.get("weight_decay", 1e-2),
+            lr=tc.get("lr", 5e-4),
+            weight_decay=tc.get("weight_decay", 0.05),
         )
 
         total_steps = self.max_epochs * len(train_loader)
         self.scheduler = torch.optim.lr_scheduler.OneCycleLR(
             self.optimizer,
-            max_lr=tc.get("lr", 2e-4),
+            max_lr=tc.get("lr", 5e-4),
             total_steps=total_steps,
             pct_start=self.warmup_pct,
             anneal_strategy="cos",
@@ -85,7 +85,7 @@ class Trainer:
             all_targets.extend(labels.detach().cpu().numpy())
 
         metrics = compute_metrics(np.array(all_preds), np.array(all_targets))
-        metrics["loss"] = total_loss / len(self.train_loader)
+        metrics["loss"] = total_loss / max(len(self.train_loader), 1)
         return metrics
 
     @torch.no_grad()
@@ -108,7 +108,7 @@ class Trainer:
             all_targets.extend(labels.cpu().numpy())
 
         metrics = compute_metrics(np.array(all_preds), np.array(all_targets))
-        metrics["loss"] = total_loss / len(self.val_loader)
+        metrics["loss"] = total_loss / max(len(self.val_loader), 1)
         return metrics
 
     def train(self) -> dict:
@@ -116,8 +116,11 @@ class Trainer:
             train_metrics = self.train_epoch(epoch)
             val_metrics = self.validate()
 
+            gap = train_metrics['loss'] - val_metrics['loss']
             print(f"Epoch {epoch+1}/{self.max_epochs} | "
                   f"Train Loss: {train_metrics['loss']:.4f} | "
+                  f"Val Loss: {val_metrics['loss']:.4f} | "
+                  f"Gap: {gap:+.4f} | "
                   f"Val Spearman: {val_metrics['spearman_rho']:.4f} | "
                   f"Val RMSE: {val_metrics['rmse']:.4f}")
 
@@ -125,6 +128,7 @@ class Trainer:
                 import wandb
                 wandb.log({
                     "epoch": epoch,
+                    "loss_gap": gap,
                     **{f"train/{k}": v for k, v in train_metrics.items()},
                     **{f"val/{k}": v for k, v in val_metrics.items()},
                 })

@@ -3,28 +3,45 @@ import torch.nn as nn
 
 
 class HierarchicalMultimodalEncoder(nn.Module):
-    def __init__(self, audio_dim=88, text_dim=768, hidden_dim=256,
-                 n_heads=4, n_structured=5):
+    """
+    Cross-modal attention encoder with reduced capacity for small datasets.
+    Round 1 architecture: 128 hidden, 1 Transformer layer, 0.4 dropout.
+    """
+    def __init__(self, audio_dim=88, text_dim=768, hidden_dim=128,
+                 n_heads=2, n_structured=5, dropout=0.4, n_layers=1):
         super().__init__()
 
-        self.audio_proj = nn.Sequential(nn.Linear(audio_dim, hidden_dim), nn.LayerNorm(hidden_dim))
-        self.text_proj  = nn.Sequential(nn.Linear(text_dim,  hidden_dim), nn.LayerNorm(hidden_dim))
+        self.audio_proj = nn.Sequential(
+            nn.Linear(audio_dim, hidden_dim),
+            nn.LayerNorm(hidden_dim),
+            nn.Dropout(dropout),
+        )
+        self.text_proj = nn.Sequential(
+            nn.Linear(text_dim, hidden_dim),
+            nn.LayerNorm(hidden_dim),
+            nn.Dropout(dropout),
+        )
         self.utterance_cross_attn = nn.MultiheadAttention(
-            embed_dim=hidden_dim, num_heads=n_heads, batch_first=True
+            embed_dim=hidden_dim, num_heads=n_heads, batch_first=True,
+            dropout=dropout,
         )
 
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=hidden_dim, nhead=n_heads, batch_first=True,
-            dim_feedforward=hidden_dim * 4, dropout=0.1
+            dim_feedforward=hidden_dim * 2, dropout=dropout,
         )
-        self.section_transformer = nn.TransformerEncoder(encoder_layer, num_layers=2)
+        self.section_transformer = nn.TransformerEncoder(encoder_layer, num_layers=n_layers)
 
-        self.structured_proj = nn.Linear(n_structured, hidden_dim)
-        self.call_fusion     = nn.Sequential(
+        self.structured_proj = nn.Sequential(
+            nn.Linear(n_structured, hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+        )
+        self.call_fusion = nn.Sequential(
             nn.Linear(hidden_dim * 3, hidden_dim),
             nn.LayerNorm(hidden_dim),
             nn.ReLU(),
-            nn.Dropout(0.2),
+            nn.Dropout(dropout),
         )
         self.output_head = nn.Linear(hidden_dim, 1)
 

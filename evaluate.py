@@ -24,7 +24,7 @@ from sklearn.metrics import (
 from torch.utils.data import DataLoader
 
 from src.models.hierarchical_encoder import HierarchicalMultimodalEncoder, collate_calls
-from src.data.dataset import EarningsCallDataset
+from src.data.dataset import EarningsCallDataset, _safe_float
 
 OUT_DIR       = Path("data/evaluation")
 CHECKPOINT    = "data/processed/checkpoints/best_model.pt"
@@ -40,9 +40,9 @@ def load_config(path="configs/default.yaml") -> dict:
         return yaml.safe_load(f)
 
 
-def to_quartile_bins(values: np.ndarray) -> np.ndarray:
-    """Assign each value to a quartile bucket [0-3] based on the array's own percentiles."""
-    q25, q50, q75 = np.percentile(values, [25, 50, 75])
+def to_quartile_bins_with_thresholds(values: np.ndarray, thresholds: tuple) -> np.ndarray:
+    """Assign each value to a quartile bucket using fixed thresholds from train set."""
+    q25, q50, q75 = thresholds
     bins = np.zeros(len(values), dtype=int)
     bins[values >= q25] = 1
     bins[values >= q50] = 2
@@ -152,9 +152,11 @@ def main():
     model = HierarchicalMultimodalEncoder(
         audio_dim=mc.get("audio_dim", 88),
         text_dim=mc.get("text_dim", 768),
-        hidden_dim=mc.get("hidden_dim", 256),
-        n_heads=mc.get("n_heads", 4),
+        hidden_dim=mc.get("hidden_dim", 128),
+        n_heads=mc.get("n_heads", 2),
         n_structured=mc.get("n_structured", 5),
+        dropout=mc.get("dropout", 0.4),
+        n_layers=mc.get("n_layers", 1),
     ).to(device)
 
     ckpt_path = Path(args.checkpoint)
@@ -169,8 +171,34 @@ def main():
     print(f"Loaded checkpoint: {ckpt_path}")
 
     # ── data ─────────────────────────────────────────────────────────────────
-    batch_size = config.get("training", {}).get("batch_size", 64)
-    ds     = EarningsCallDataset(f"{SPLITS_DIR}/{args.split}.csv", "data/processed/checkpoints", LABELS_CSV)
+    batch_size = config.get("training", {}).get("batch_size", 16)
+    target_transform = config.get("training", {}).get("target_transform", "rank")
+    multi_window = config.get("training", {}).get("multi_window", False)
+
+    # Build train dataset to get rank transformer + quartile thresholds
+    train_ds = EarningsCallDataset(
+        f"{SPLITS_DIR}/train.csv", "data/processed/checkpoints", LABELS_CSV,
+        augment=False, target_transform=target_transform,
+        multi_window=multi_window,
+    )
+
+    # Get raw train labels for quartile thresholds
+    train_raw_labels = []
+    for call_id in train_ds.call_ids:
+        row = train_ds.labels_df[train_ds.labels_df["call_id"] == call_id]
+        if not row.empty:
+            train_raw_labels.append(_safe_float(row.iloc[0]["abnormal_vol_3d"]))
+    train_raw = np.array(train_raw_labels)
+    quartile_thresholds = tuple(np.percentile(train_raw, [25, 50, 75]))
+    print(f"Train quartile thresholds: {[f'{t:.6f}' for t in quartile_thresholds]}")
+
+    ds = EarningsCallDataset(
+        f"{SPLITS_DIR}/{args.split}.csv", "data/processed/checkpoints", LABELS_CSV,
+        augment=False,
+        rank_transformer=train_ds.rank_transformer,
+        target_transform=target_transform,
+        multi_window=multi_window,
+    )
     loader = DataLoader(ds, batch_size=batch_size, shuffle=False,
                         collate_fn=collate_calls, num_workers=0, pin_memory=(device == "cuda"))
     print(f"Evaluating on {args.split} set: {len(ds)} samples")
@@ -178,20 +206,28 @@ def main():
     # ── inference ─────────────────────────────────────────────────────────────
     preds, targets = run_inference(model, loader, device)
 
+    # ── If rank-transformed, inverse-transform for interpretable metrics ──────
+    if target_transform == "rank":
+        raw_preds = np.array([train_ds.rank_transformer.inverse_transform(p) for p in preds])
+        raw_targets = np.array([train_ds.rank_transformer.inverse_transform(t) for t in targets])
+    else:
+        raw_preds = preds
+        raw_targets = targets
+
     # ── regression metrics ────────────────────────────────────────────────────
     spearman, spearman_p = spearmanr(preds, targets)
     kendall,  kendall_p  = kendalltau(preds, targets)
-    mae  = mean_absolute_error(targets, preds)
-    rmse = np.sqrt(mean_squared_error(targets, preds))
-    r2   = r2_score(targets, preds)
+    mae  = mean_absolute_error(raw_targets, raw_preds)
+    rmse = np.sqrt(mean_squared_error(raw_targets, raw_preds))
+    r2   = r2_score(raw_targets, raw_preds)
 
     # directional accuracy (above/below median)
-    median        = np.median(targets)
-    dir_acc       = np.mean((preds >= median) == (targets >= median))
+    median        = np.median(raw_targets)
+    dir_acc       = np.mean((raw_preds >= median) == (raw_targets >= median))
 
     # top-quartile precision
-    top_q_pred    = preds   >= np.percentile(preds,   75)
-    top_q_true    = targets >= np.percentile(targets, 75)
+    top_q_pred    = raw_preds   >= np.percentile(raw_preds,   75)
+    top_q_true    = raw_targets >= np.percentile(raw_targets, 75)
     top_q_prec    = np.sum(top_q_pred & top_q_true) / np.sum(top_q_pred).clip(min=1)
     top_q_recall  = np.sum(top_q_pred & top_q_true) / np.sum(top_q_true).clip(min=1)
 
@@ -211,9 +247,9 @@ def main():
     for k, v in metrics.items():
         print(f"  {k:<22} {v}")
 
-    # ── quartile confusion matrix ─────────────────────────────────────────────
-    true_bins = to_quartile_bins(targets)
-    pred_bins = to_quartile_bins(preds)
+    # ── quartile confusion matrix (using TRAIN thresholds) ────────────────────
+    true_bins = to_quartile_bins_with_thresholds(raw_targets, quartile_thresholds)
+    pred_bins = to_quartile_bins_with_thresholds(raw_preds, quartile_thresholds)
     cm = confusion_matrix(true_bins, pred_bins, labels=[0, 1, 2, 3])
 
     print("\n" + "="*50)
@@ -244,9 +280,9 @@ def main():
     # ── plots ─────────────────────────────────────────────────────────────────
     print("\nGenerating plots...")
     plot_confusion_matrix(cm,     OUT_DIR / f"confusion_matrix_{args.split}.png")
-    plot_scatter(preds, targets,  OUT_DIR / f"scatter_{args.split}.png")
-    plot_residuals(preds, targets, OUT_DIR / f"residuals_{args.split}.png")
-    plot_cumulative_gain(preds, targets, OUT_DIR / f"cumulative_gain_{args.split}.png")
+    plot_scatter(raw_preds, raw_targets,  OUT_DIR / f"scatter_{args.split}.png")
+    plot_residuals(raw_preds, raw_targets, OUT_DIR / f"residuals_{args.split}.png")
+    plot_cumulative_gain(raw_preds, raw_targets, OUT_DIR / f"cumulative_gain_{args.split}.png")
 
     print(f"\nAll outputs written to {OUT_DIR}/")
 

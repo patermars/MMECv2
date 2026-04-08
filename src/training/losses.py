@@ -28,16 +28,16 @@ class CombinedLoss(nn.Module):
         super().__init__()
         self.mse_weight = mse_weight
         self.rank_weight = rank_weight
-        self.mse_loss = nn.MSELoss()
+        self.huber_loss = nn.SmoothL1Loss(beta=0.5)
         self.rank_loss = PairwiseRankingLoss(margin=rank_margin)
 
     def forward(self, preds: torch.Tensor, targets: torch.Tensor) -> dict:
-        mse  = self.mse_loss(preds, targets)
-        rank = self.rank_loss(preds, targets)
-        total = self.mse_weight * mse + self.rank_weight * rank
+        huber = self.huber_loss(preds, targets)
+        rank  = self.rank_loss(preds, targets)
+        total = self.mse_weight * huber + self.rank_weight * rank
 
         return {
             "total": total,
-            "mse":   mse,
+            "mse":   huber,
             "rank":  rank,
         }

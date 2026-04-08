@@ -74,8 +74,10 @@ def build_model_for_experiment(exp_id: str, config: dict) -> torch.nn.Module:
 
     audio_dim = mc.get("audio_dim", 88)
     text_dim = mc.get("text_dim", 768)
-    hidden_dim = mc.get("hidden_dim", 256)
+    hidden_dim = mc.get("hidden_dim", 128)
     n_structured = mc.get("n_structured", 5)
+    dropout = mc.get("dropout", 0.4)
+    n_layers = mc.get("n_layers", 1)
 
     if not exp["audio"]:
         audio_dim = 0
@@ -87,8 +89,10 @@ def build_model_for_experiment(exp_id: str, config: dict) -> torch.nn.Module:
             audio_dim=audio_dim or 88,
             text_dim=text_dim or 768,
             hidden_dim=hidden_dim,
-            n_heads=mc.get("n_heads", 4),
+            n_heads=mc.get("n_heads", 2),
             n_structured=n_structured,
+            dropout=dropout,
+            n_layers=n_layers,
         )
     elif exp["fusion"] == "late":
         return LateFusionBaseline(

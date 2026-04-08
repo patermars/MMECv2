@@ -1,9 +1,10 @@
 import argparse
 import yaml
 import torch
+import numpy as np
 from dotenv import load_dotenv
 from torch.utils.data import DataLoader
-from src.models.hierarchical_encoder import collate_calls
+from src.models.hierarchical_encoder import HierarchicalMultimodalEncoder, collate_calls
 from src.data.dataset import EarningsCallDataset
 
 load_dotenv()
@@ -19,9 +20,31 @@ def load_config(config_path: str = "configs/default.yaml") -> dict:
 
 
 def build_datasets(config: dict):
-    train_ds = EarningsCallDataset(f"{SPLITS_DIR}/train.csv", CHECKPOINT_DIR, LABELS_CSV)
-    val_ds   = EarningsCallDataset(f"{SPLITS_DIR}/val.csv",   CHECKPOINT_DIR, LABELS_CSV)
-    test_ds  = EarningsCallDataset(f"{SPLITS_DIR}/test.csv",  CHECKPOINT_DIR, LABELS_CSV)
+    aug_config = config.get("augmentation", {})
+    tc = config.get("training", {})
+    target_transform = tc.get("target_transform", "rank")
+    multi_window = tc.get("multi_window", False)
+
+    train_ds = EarningsCallDataset(
+        f"{SPLITS_DIR}/train.csv", CHECKPOINT_DIR, LABELS_CSV,
+        augment=True, aug_config=aug_config,
+        target_transform=target_transform,
+        multi_window=multi_window,
+    )
+    val_ds = EarningsCallDataset(
+        f"{SPLITS_DIR}/val.csv", CHECKPOINT_DIR, LABELS_CSV,
+        augment=False,
+        rank_transformer=train_ds.rank_transformer,
+        target_transform=target_transform,
+        multi_window=multi_window,
+    )
+    test_ds = EarningsCallDataset(
+        f"{SPLITS_DIR}/test.csv", CHECKPOINT_DIR, LABELS_CSV,
+        augment=False,
+        rank_transformer=train_ds.rank_transformer,
+        target_transform=target_transform,
+        multi_window=multi_window,
+    )
     print(f"Dataset sizes — train: {len(train_ds)}, val: {len(val_ds)}, test: {len(test_ds)}")
     return train_ds, val_ds, test_ds
 
@@ -35,19 +58,24 @@ def build_dataloaders(config: dict):
     return train_loader, val_loader, test_loader
 
 
-def run_training(config: dict, device: str):
-    print("=== Training Full Model (EXP-08) ===")
-    from src.models.hierarchical_encoder import HierarchicalMultimodalEncoder
-    from src.training.trainer import Trainer
-
+def build_model(config: dict):
     mc = config.get("model", {})
-    model = HierarchicalMultimodalEncoder(
+    return HierarchicalMultimodalEncoder(
         audio_dim=mc.get("audio_dim", 88),
         text_dim=mc.get("text_dim", 768),
-        hidden_dim=mc.get("hidden_dim", 256),
-        n_heads=mc.get("n_heads", 4),
+        hidden_dim=mc.get("hidden_dim", 128),
+        n_heads=mc.get("n_heads", 2),
         n_structured=mc.get("n_structured", 5),
+        dropout=mc.get("dropout", 0.4),
+        n_layers=mc.get("n_layers", 1),
     )
+
+
+def run_training(config: dict, device: str):
+    from src.training.trainer import Trainer
+
+    print("=== Training Full Model (EXP-08) ===")
+    model = build_model(config)
     print(f"Model parameters: {sum(p.numel() for p in model.parameters()):,} total")
 
     train_loader, val_loader, _ = build_dataloaders(config)

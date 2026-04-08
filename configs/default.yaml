@@ -38,22 +38,29 @@ splits:
 model:
   audio_dim:    88
   text_dim:     768
-  hidden_dim:   256
-  n_heads:      4
+  hidden_dim:   128
+  n_heads:      2
   n_structured: 5
-  dropout:      0.2
+  dropout:      0.4
+  n_layers:     1
 
 training:
   device:              cpu   # auto-detected: cuda if available, else cpu
-  batch_size:          64
-  lr:                  0.0001
+  batch_size:          16
+  lr:                  0.0005
   finbert_lr:          0.00002
-  weight_decay:        0.01
+  weight_decay:        0.05
   max_epochs:          100
-  patience:            15
+  patience:            20
   gradient_clip:       1.0
   loss_mse_weight:     0.7
   loss_rank_weight:    0.3
   finbert_unfreeze_epoch: 5
-  warmup_pct:          0.05
+  warmup_pct:          0.1
   seed:                42
+  target_transform:    rank    # "rank" or "zscore"
+  multi_window:        true    # use 1d+3d+7d windows to 3× dataset
+
+augmentation:
+  feature_noise_std:   0.05
+  feature_dropout_p:   0.15
