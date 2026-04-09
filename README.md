@@ -1,125 +1,92 @@
-# MMEC v2 — Multi-Modal Earnings Call Analysis
+# Multi-Modal Earnings Call Volatility Prediction
 
-Predicts post-earnings abnormal volatility from multi-modal features (audio + text + structured) extracted from the ACL19 earnings call dataset (Qin & Yang, ACL 2019).
+Predicts post-earnings stock volatility by fusing **acoustic stress signals** (pitch, jitter, shimmer, HNR) with **NLP text embeddings** (FinBERT) and **wav2vec2 audio embeddings** via cross-modal attention.
 
-## Quick Start
+**Dataset:** MAEC (S&P 1500 earnings calls with pre-segmented utterance audio + Praat features)
 
-### 1. Setup Environment
+## Setup
 
 ```bash
-python -m venv venv
-source venv/bin/activate          # Linux/Mac
-# venv\Scripts\activate           # Windows
-
 pip install -r requirements.txt
-
-cp .env.example .env
-# Edit .env with your HuggingFace token and (optional) W&B key
 ```
 
-### 2. Get ACL19 Dataset
+## Run Pipeline
 
-Download from [Google Drive](https://drive.google.com/drive/folders/1BKCANORbcmUJKkOkBOghw6uNHPqS_az1), then:
+### 1. Preprocess (GPU: encodes text with FinBERT + audio with wav2vec2)
 
 ```bash
-zip -s0 ACL19_Release.zip --out ACL19_Release_All.zip
-unzip -q ACL19_Release_All.zip
-# Results in: ACL19_Release/{CompanyName_YYYYMMDD}/CEO/*.mp3 + TextSequence.txt
+# Smoke test (5 calls)
+python -m src.preprocess --max_calls 5
+
+# Full run
+python -m src.preprocess
 ```
 
-Optionally place a `{company: ticker}` JSON map at `data/raw/ticker_map.json` for accurate ticker resolution.
+Creates per-call `.pt` files in `data/processed/` + `manifest.csv`.
 
-### 3. Run the Pipeline
+### 2. Build Labels (fetches stock returns from yfinance)
 
 ```bash
-# Phase 0 — Parse ACL19 dataset (text + audio paths)
-python run_pipeline.py --phase 0 --acl19-root /path/to/ACL19_Release
+# Smoke test
+python -m src.label_builder --max_calls 5
 
-# Phase 1 — Build volatility labels from yfinance
-python run_pipeline.py --phase 1
+# Full run (uses 8 threads by default)
+python -m src.label_builder
 
-# Phase 2 — Assemble full dataset (features + labels + splits)
-python run_pipeline.py --phase 2
 ```
 
-### 4. Train Models
+Creates `data/processed/labels.csv` with abnormal volatility targets.
+
+
+### 3. Train
 
 ```bash
-# Train the full hierarchical model (EXP-08)
-python run_training.py --mode train
+# Dry run (1 epoch, 1 seed)
+python -m src.train --epochs 1 --seeds 1
 
-# Run full ablation study (all 12 experiments)
-python run_training.py --mode ablation
+# Full training (50 epochs, 5-seed ensemble)
+python -m src.train
 
-# Run a specific experiment
-python run_training.py --mode single --exp-id EXP-06
+# Ablation baselines
+python -m src.train --model_type audio_only
+python -m src.train --model_type text_only
+python -m src.train --model_type early_fusion
 ```
 
-### 5. Dry Run (verify config)
+Saves checkpoints to `checkpoints/`.
+
+### 4. Evaluate
 
 ```bash
-python run_pipeline.py --phase 0 --dry-run
+python -m src.evaluate --checkpoint checkpoints/cross_modal_seed0.pt
 ```
 
-## Project Structure
+Reports: Spearman ρ, Kendall τ, MAE, RMSE, top-quartile hit rate + ablation table.
+
+## Architecture
 
 ```
-MMECv2/
-├── configs/
-│   └── default.yaml              # All hyperparameters and paths
-├── src/
-│   ├── data_pipeline/
-│   │   ├── acl19_parser.py       # Parse ACL19 folders → call records
-│   │   ├── label_builder.py      # Event-study OLS + earnings surprise
-│   │   ├── dataset_assembler.py  # Merge features + labels + temporal splits
-│   │   ├── dataset_validator.py  # Shape/NaN/distribution checks
-│   │   ├── feature_extractor.py  # eGeMAPS (88-dim) utterance features
-│   │   ├── text_encoder.py       # FinBERT CLS embeddings (768-dim)
-│   │   └── linguistic_features.py# Loughran-McDonald sentiment (7-dim)
-│   ├── models/
-│   │   ├── hierarchical_encoder.py   # 3-level cross-modal attention
-│   │   ├── volatility_head.py        # Regression head
-│   │   └── fusion/
-│   │       ├── early_fusion.py       # Concatenate + MLP baseline
-│   │       ├── late_fusion.py        # Separate towers baseline
-│   │       └── cross_modal_attn.py   # Attention module
-│   ├── training/
-│   │   ├── losses.py             # MSE + Pairwise ranking loss
-│   │   ├── trainer.py            # Training loop + early stopping
-│   │   └── ablation_runner.py    # 12-experiment ablation suite
-│   └── evaluation/
-│       ├── metrics.py            # Spearman, Kendall, MAE, RMSE
-│       └── interpretability.py   # SHAP + visualization
-├── run_pipeline.py               # Data pipeline CLI
-├── run_training.py               # Training CLI
-├── requirements.txt
-├── .env.example
-└── solution.md                   # Full solution document
+Acoustic (29D Praat) ──┐
+                       ├── Cross-Modal Attention ──► Transformer ──► Mean Pool ──► MLP ──► σ̂
+Text (768D FinBERT) ───┤
+                       │
+Audio (768D wav2vec2) ─┘
 ```
 
-## Key Design Decisions
+- **Cross-attention:** text queries attend to acoustic + wav2vec features
+- **~500K params** (appropriate for ~900 effective training samples)
+- **5-seed ensemble** for stable predictions
 
-- **ACL19 dataset** — CEO-only sentence-level audio aligned with text; no diarization needed
-- **eGeMAPS (88 features)** over ComParE (6,373) — better suited for ~500-call dataset
-- **Event-study OLS** with proper α + β estimation over 200-day window
-- **Earnings surprise** included as confounder in all experiment variants
-- **Primary metric**: Spearman rank correlation (ρ)
-- **Loss**: 0.7 × MSE + 0.3 × Pairwise Ranking
+## Config
 
-## Requirements
+All hyperparameters in `configs/default.yaml`. Key settings:
 
-- Python 3.10+
-- CUDA GPU (recommended for FinBERT)
-- ffmpeg
-- HuggingFace token (for pyannote model access if needed)
-
-## Citation
-
-```bibtex
-@inproceedings{qin-yang-2019-say,
-  author    = {Qin, Yu and Yang, Yi},
-  title     = {What You Say and How You Say It Matters: Predicting Financial Risk Using Verbal and Vocal Cues},
-  booktitle = {ACL 2019},
-  year      = {2019},
-}
-```
+| Parameter | Value |
+|---|---|
+| Learning rate | 2e-4 |
+| Batch size | 16 |
+| Hidden dim | 256 |
+| Attention heads | 4 |
+| Patience | 15 epochs |
+| Primary metric | Spearman ρ |
+| Target | 3-day abnormal volatility |
