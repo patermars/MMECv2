@@ -1,0 +1,226 @@
+(mmecv2) D:\MMECv3>python -m src.train
+Device: cpu
+
+============================================================
+Seed 0
+============================================================
+  train: 260 calls
+  val: 70 calls
+  test: 168 calls
+Model: cross_modal | Params: 2,608,129
+C:\Users\cl501_24\.conda\envs\mmecv2\lib\site-packages\torch\utils\data\dataloader.py:666: UserWarning: 'pin_memory' argument is set as true but no accelerator is found, then device pinned memory won't be used.
+  warnings.warn(warn_msg)
+C:\Users\cl501_24\.conda\envs\mmecv2\lib\site-packages\torch\nn\modules\transformer.py:515: UserWarning: The PyTorch API of nested tensors is in prototype stage and will change in the near future. We recommend specifying layout=torch.jagged when constructing a nested tensor, as this layout receives active development, has better operator coverage, and works with torch.compile. (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\NestedTensorImpl.cpp:182.)
+  output = torch._nested_tensor_from_mask(
+  E001 | train_loss=0.03541 | val_mse=0.00745 val_rho=0.0810 val_pred_std=0.00313 val_label_std=0.05617 | 8.9s
+  E002 | train_loss=0.00386 | val_mse=0.00319 val_rho=0.0273 val_pred_std=0.00310 val_label_std=0.05617 | 11.5s
+  E003 | train_loss=0.00233 | val_mse=0.00407 val_rho=0.0300 val_pred_std=0.00193 val_label_std=0.05617 | 17.7s
+  E004 | train_loss=0.00234 | val_mse=0.00405 val_rho=0.0095 val_pred_std=0.00179 val_label_std=0.05617 | 19.3s
+  E005 | train_loss=0.00255 | val_mse=0.00392 val_rho=0.0138 val_pred_std=0.00187 val_label_std=0.05617 | 24.8s
+  E006 | train_loss=0.00220 | val_mse=0.00345 val_rho=0.0436 val_pred_std=0.00199 val_label_std=0.05617 | 21.9s
+  E007 | train_loss=0.00210 | val_mse=0.00327 val_rho=0.0349 val_pred_std=0.00216 val_label_std=0.05617 | 18.5s
+  E008 | train_loss=0.00196 | val_mse=0.00373 val_rho=0.0256 val_pred_std=0.00224 val_label_std=0.05617 | 17.8s
+  E009 | train_loss=0.00217 | val_mse=0.00337 val_rho=0.0324 val_pred_std=0.00223 val_label_std=0.05617 | 14.2s
+  E010 | train_loss=0.00202 | val_mse=0.00348 val_rho=0.0271 val_pred_std=0.00221 val_label_std=0.05617 | 8.8s
+  E011 | train_loss=0.00203 | val_mse=0.00332 val_rho=0.0415 val_pred_std=0.00270 val_label_std=0.05617 | 8.6s
+  E012 | train_loss=0.00169 | val_mse=0.00411 val_rho=0.0526 val_pred_std=0.00319 val_label_std=0.05617 | 9.6s
+  E013 | train_loss=0.00172 | val_mse=0.00318 val_rho=0.0198 val_pred_std=0.00204 val_label_std=0.05617 | 9.5s
+  E014 | train_loss=0.00220 | val_mse=0.00352 val_rho=0.0329 val_pred_std=0.00134 val_label_std=0.05617 | 9.4s
+  E015 | train_loss=0.00194 | val_mse=0.00324 val_rho=0.0031 val_pred_std=0.00158 val_label_std=0.05617 | 9.4s
+  E016 | train_loss=0.00177 | val_mse=0.00360 val_rho=-0.0036 val_pred_std=0.00132 val_label_std=0.05617 | 9.3s
+  E017 | train_loss=0.00169 | val_mse=0.00405 val_rho=-0.0234 val_pred_std=0.00128 val_label_std=0.05617 | 9.4s
+  E018 | train_loss=0.00185 | val_mse=0.00386 val_rho=-0.0355 val_pred_std=0.00136 val_label_std=0.05617 | 9.2s
+  E019 | train_loss=0.00167 | val_mse=0.00361 val_rho=-0.0306 val_pred_std=0.00134 val_label_std=0.05617 | 9.2s
+  E020 | train_loss=0.00174 | val_mse=0.00366 val_rho=-0.0319 val_pred_std=0.00134 val_label_std=0.05617 | 9.4s
+  E021 | train_loss=0.00171 | val_mse=0.00390 val_rho=-0.0275 val_pred_std=0.00188 val_label_std=0.05617 | 9.3s
+  E022 | train_loss=0.00186 | val_mse=0.00370 val_rho=-0.0146 val_pred_std=0.00145 val_label_std=0.05617 | 8.9s
+  E023 | train_loss=0.00187 | val_mse=0.00364 val_rho=-0.0176 val_pred_std=0.00167 val_label_std=0.05617 | 8.7s
+  E024 | train_loss=0.00166 | val_mse=0.00329 val_rho=0.0177 val_pred_std=0.00265 val_label_std=0.05617 | 9.2s
+  E025 | train_loss=0.00180 | val_mse=0.00321 val_rho=0.0395 val_pred_std=0.00225 val_label_std=0.05617 | 8.9s
+  E026 | train_loss=0.00149 | val_mse=0.00359 val_rho=0.0122 val_pred_std=0.00188 val_label_std=0.05617 | 9.0s
+  E027 | train_loss=0.00144 | val_mse=0.00344 val_rho=0.0102 val_pred_std=0.00209 val_label_std=0.05617 | 8.8s
+  E028 | train_loss=0.00156 | val_mse=0.00367 val_rho=0.0061 val_pred_std=0.00232 val_label_std=0.05617 | 8.9s
+  Early stop at epoch 28
+  Test: mse=0.00140 mae=0.03124 rho=-0.0687
+
+============================================================
+Seed 42
+============================================================
+  train: 260 calls
+  val: 70 calls
+  test: 168 calls
+Model: cross_modal | Params: 2,608,129
+C:\Users\cl501_24\.conda\envs\mmecv2\lib\site-packages\torch\utils\data\dataloader.py:666: UserWarning: 'pin_memory' argument is set as true but no accelerator is found, then device pinned memory won't be used.
+  warnings.warn(warn_msg)
+  E001 | train_loss=0.02344 | val_mse=0.00569 val_rho=0.1058 val_pred_std=0.00123 val_label_std=0.05617 | 8.9s
+  E002 | train_loss=0.00319 | val_mse=0.00495 val_rho=0.0478 val_pred_std=0.00086 val_label_std=0.05617 | 8.8s
+  E003 | train_loss=0.00222 | val_mse=0.00393 val_rho=0.0973 val_pred_std=0.00092 val_label_std=0.05617 | 8.7s
+  E004 | train_loss=0.00201 | val_mse=0.00341 val_rho=0.0588 val_pred_std=0.00082 val_label_std=0.05617 | 8.4s
+  E005 | train_loss=0.00214 | val_mse=0.00386 val_rho=0.0883 val_pred_std=0.00086 val_label_std=0.05617 | 8.6s
+  E006 | train_loss=0.00184 | val_mse=0.00375 val_rho=0.0861 val_pred_std=0.00081 val_label_std=0.05617 | 8.5s
+  E007 | train_loss=0.00208 | val_mse=0.00356 val_rho=0.0715 val_pred_std=0.00065 val_label_std=0.05617 | 8.6s
+  E008 | train_loss=0.00182 | val_mse=0.00357 val_rho=0.0633 val_pred_std=0.00074 val_label_std=0.05617 | 8.7s
+  E009 | train_loss=0.00215 | val_mse=0.00363 val_rho=0.0582 val_pred_std=0.00074 val_label_std=0.05617 | 8.9s
+  E010 | train_loss=0.00177 | val_mse=0.00358 val_rho=0.0582 val_pred_std=0.00075 val_label_std=0.05617 | 8.7s
+  E011 | train_loss=0.00187 | val_mse=0.00331 val_rho=-0.0186 val_pred_std=0.00096 val_label_std=0.05617 | 8.6s
+  E012 | train_loss=0.00162 | val_mse=0.00322 val_rho=0.0597 val_pred_std=0.00097 val_label_std=0.05617 | 8.6s
+  E013 | train_loss=0.00241 | val_mse=0.00323 val_rho=0.0715 val_pred_std=0.00118 val_label_std=0.05617 | 9.1s
+  E014 | train_loss=0.00180 | val_mse=0.00337 val_rho=-0.0285 val_pred_std=0.00090 val_label_std=0.05617 | 11.1s
+  E015 | train_loss=0.00159 | val_mse=0.00318 val_rho=0.0081 val_pred_std=0.00086 val_label_std=0.05617 | 9.7s
+  E016 | train_loss=0.00186 | val_mse=0.00371 val_rho=0.0485 val_pred_std=0.00071 val_label_std=0.05617 | 9.2s
+  E017 | train_loss=0.00164 | val_mse=0.00419 val_rho=0.0227 val_pred_std=0.00069 val_label_std=0.05617 | 8.7s
+  E018 | train_loss=0.00172 | val_mse=0.00348 val_rho=0.0331 val_pred_std=0.00075 val_label_std=0.05617 | 8.6s
+  E019 | train_loss=0.00172 | val_mse=0.00364 val_rho=0.0290 val_pred_std=0.00075 val_label_std=0.05617 | 8.6s
+  E020 | train_loss=0.00165 | val_mse=0.00365 val_rho=0.0299 val_pred_std=0.00075 val_label_std=0.05617 | 9.2s
+  E021 | train_loss=0.00149 | val_mse=0.00357 val_rho=0.0411 val_pred_std=0.00087 val_label_std=0.05617 | 8.6s
+  E022 | train_loss=0.00168 | val_mse=0.00318 val_rho=0.0527 val_pred_std=0.00105 val_label_std=0.05617 | 8.5s
+  E023 | train_loss=0.00185 | val_mse=0.00397 val_rho=0.0490 val_pred_std=0.00147 val_label_std=0.05617 | 8.7s
+  E024 | train_loss=0.00167 | val_mse=0.00316 val_rho=0.0630 val_pred_std=0.00176 val_label_std=0.05617 | 8.6s
+  E025 | train_loss=0.00173 | val_mse=0.00338 val_rho=0.0422 val_pred_std=0.00162 val_label_std=0.05617 | 9.1s
+  E026 | train_loss=0.00143 | val_mse=0.00326 val_rho=0.0537 val_pred_std=0.00177 val_label_std=0.05617 | 8.7s
+  E027 | train_loss=0.00156 | val_mse=0.00320 val_rho=0.0585 val_pred_std=0.00204 val_label_std=0.05617 | 8.8s
+  E028 | train_loss=0.00145 | val_mse=0.00412 val_rho=0.0508 val_pred_std=0.00186 val_label_std=0.05617 | 8.7s
+  E029 | train_loss=0.00147 | val_mse=0.00355 val_rho=0.0571 val_pred_std=0.00197 val_label_std=0.05617 | 8.9s
+  E030 | train_loss=0.00147 | val_mse=0.00355 val_rho=0.0561 val_pred_std=0.00197 val_label_std=0.05617 | 8.6s
+  E031 | train_loss=0.00149 | val_mse=0.00440 val_rho=0.0308 val_pred_std=0.00209 val_label_std=0.05617 | 8.7s
+  E032 | train_loss=0.00179 | val_mse=0.00323 val_rho=0.0269 val_pred_std=0.00193 val_label_std=0.05617 | 8.8s
+  E033 | train_loss=0.00154 | val_mse=0.00381 val_rho=-0.0533 val_pred_std=0.00097 val_label_std=0.05617 | 9.2s
+  E034 | train_loss=0.00143 | val_mse=0.00385 val_rho=-0.0529 val_pred_std=0.00104 val_label_std=0.05617 | 9.3s
+  E035 | train_loss=0.00144 | val_mse=0.00356 val_rho=-0.0017 val_pred_std=0.00164 val_label_std=0.05617 | 9.0s
+  E036 | train_loss=0.00133 | val_mse=0.00369 val_rho=0.0229 val_pred_std=0.00213 val_label_std=0.05617 | 8.7s
+  E037 | train_loss=0.00149 | val_mse=0.00372 val_rho=0.0399 val_pred_std=0.00234 val_label_std=0.05617 | 8.7s
+  E038 | train_loss=0.00142 | val_mse=0.00324 val_rho=0.0453 val_pred_std=0.00248 val_label_std=0.05617 | 8.9s
+  E039 | train_loss=0.00127 | val_mse=0.00363 val_rho=0.0303 val_pred_std=0.00246 val_label_std=0.05617 | 8.6s
+  Early stop at epoch 39
+  Test: mse=0.00140 mae=0.03139 rho=0.0854
+
+============================================================
+Seed 84
+============================================================
+  train: 260 calls
+  val: 70 calls
+  test: 168 calls
+Model: cross_modal | Params: 2,608,129
+C:\Users\cl501_24\.conda\envs\mmecv2\lib\site-packages\torch\utils\data\dataloader.py:666: UserWarning: 'pin_memory' argument is set as true but no accelerator is found, then device pinned memory won't be used.
+  warnings.warn(warn_msg)
+  E001 | train_loss=0.02076 | val_mse=0.00466 val_rho=-0.0508 val_pred_std=0.00216 val_label_std=0.05617 | 8.5s
+  E002 | train_loss=0.00380 | val_mse=0.00504 val_rho=0.0438 val_pred_std=0.00127 val_label_std=0.05617 | 8.5s
+  E003 | train_loss=0.00202 | val_mse=0.00504 val_rho=0.0633 val_pred_std=0.00101 val_label_std=0.05617 | 8.5s
+  E004 | train_loss=0.00208 | val_mse=0.00371 val_rho=-0.0589 val_pred_std=0.00077 val_label_std=0.05617 | 8.7s
+  E005 | train_loss=0.00180 | val_mse=0.00342 val_rho=-0.0485 val_pred_std=0.00090 val_label_std=0.05617 | 8.5s
+  E006 | train_loss=0.00187 | val_mse=0.00360 val_rho=-0.0357 val_pred_std=0.00089 val_label_std=0.05617 | 8.6s
+  E007 | train_loss=0.00167 | val_mse=0.00426 val_rho=-0.0092 val_pred_std=0.00090 val_label_std=0.05617 | 8.7s
+  E008 | train_loss=0.00186 | val_mse=0.00340 val_rho=-0.0256 val_pred_std=0.00090 val_label_std=0.05617 | 8.8s
+  E009 | train_loss=0.00169 | val_mse=0.00377 val_rho=-0.0288 val_pred_std=0.00088 val_label_std=0.05617 | 8.7s
+  E010 | train_loss=0.00168 | val_mse=0.00375 val_rho=-0.0321 val_pred_std=0.00088 val_label_std=0.05617 | 8.7s
+  E011 | train_loss=0.00175 | val_mse=0.00351 val_rho=-0.0625 val_pred_std=0.00112 val_label_std=0.05617 | 8.9s
+  E012 | train_loss=0.00185 | val_mse=0.00368 val_rho=-0.0583 val_pred_std=0.00151 val_label_std=0.05617 | 8.6s
+  E013 | train_loss=0.00183 | val_mse=0.00356 val_rho=0.0672 val_pred_std=0.00067 val_label_std=0.05617 | 8.1s
+  E014 | train_loss=0.00197 | val_mse=0.00461 val_rho=-0.0264 val_pred_std=0.00093 val_label_std=0.05617 | 8.2s
+  E015 | train_loss=0.00205 | val_mse=0.00436 val_rho=-0.0346 val_pred_std=0.00108 val_label_std=0.05617 | 8.2s
+  E016 | train_loss=0.00166 | val_mse=0.00337 val_rho=-0.0598 val_pred_std=0.00096 val_label_std=0.05617 | 8.2s
+  E017 | train_loss=0.00185 | val_mse=0.00344 val_rho=-0.0620 val_pred_std=0.00091 val_label_std=0.05617 | 8.1s
+  E018 | train_loss=0.00170 | val_mse=0.00350 val_rho=-0.0463 val_pred_std=0.00091 val_label_std=0.05617 | 8.1s
+  E019 | train_loss=0.00166 | val_mse=0.00360 val_rho=-0.0459 val_pred_std=0.00094 val_label_std=0.05617 | 8.3s
+  E020 | train_loss=0.00148 | val_mse=0.00355 val_rho=-0.0422 val_pred_std=0.00094 val_label_std=0.05617 | 8.1s
+  E021 | train_loss=0.00163 | val_mse=0.00417 val_rho=-0.0323 val_pred_std=0.00123 val_label_std=0.05617 | 8.0s
+  E022 | train_loss=0.00178 | val_mse=0.00338 val_rho=0.0049 val_pred_std=0.00151 val_label_std=0.05617 | 8.1s
+  E023 | train_loss=0.00151 | val_mse=0.00356 val_rho=-0.0260 val_pred_std=0.00177 val_label_std=0.05617 | 8.5s
+  E024 | train_loss=0.00157 | val_mse=0.00359 val_rho=-0.0178 val_pred_std=0.00224 val_label_std=0.05617 | 8.5s
+  E025 | train_loss=0.00142 | val_mse=0.00326 val_rho=0.0015 val_pred_std=0.00229 val_label_std=0.05617 | 8.4s
+  E026 | train_loss=0.00170 | val_mse=0.00363 val_rho=-0.0005 val_pred_std=0.00185 val_label_std=0.05617 | 8.4s
+  E027 | train_loss=0.00139 | val_mse=0.00358 val_rho=-0.0007 val_pred_std=0.00182 val_label_std=0.05617 | 8.6s
+  E028 | train_loss=0.00145 | val_mse=0.00406 val_rho=-0.0124 val_pred_std=0.00180 val_label_std=0.05617 | 8.5s
+  E029 | train_loss=0.00149 | val_mse=0.00350 val_rho=-0.0080 val_pred_std=0.00189 val_label_std=0.05617 | 8.5s
+  E030 | train_loss=0.00144 | val_mse=0.00356 val_rho=-0.0107 val_pred_std=0.00191 val_label_std=0.05617 | 8.3s
+  E031 | train_loss=0.00189 | val_mse=0.00326 val_rho=-0.0081 val_pred_std=0.00174 val_label_std=0.05617 | 8.4s
+  E032 | train_loss=0.00166 | val_mse=0.00395 val_rho=-0.0079 val_pred_std=0.00140 val_label_std=0.05617 | 8.4s
+  E033 | train_loss=0.00156 | val_mse=0.00427 val_rho=0.0193 val_pred_std=0.00144 val_label_std=0.05617 | 8.7s
+  E034 | train_loss=0.00127 | val_mse=0.00330 val_rho=-0.0047 val_pred_std=0.00177 val_label_std=0.05617 | 10.4s
+  E035 | train_loss=0.00152 | val_mse=0.00370 val_rho=-0.0128 val_pred_std=0.00179 val_label_std=0.05617 | 9.9s
+  E036 | train_loss=0.00149 | val_mse=0.00339 val_rho=-0.0131 val_pred_std=0.00144 val_label_std=0.05617 | 8.6s
+  E037 | train_loss=0.00130 | val_mse=0.00394 val_rho=-0.0225 val_pred_std=0.00150 val_label_std=0.05617 | 14.1s
+  E038 | train_loss=0.00139 | val_mse=0.00358 val_rho=-0.0246 val_pred_std=0.00154 val_label_std=0.05617 | 16.0s
+  E039 | train_loss=0.00145 | val_mse=0.00361 val_rho=-0.0262 val_pred_std=0.00158 val_label_std=0.05617 | 17.8s
+  E040 | train_loss=0.00137 | val_mse=0.00369 val_rho=-0.0256 val_pred_std=0.00157 val_label_std=0.05617 | 16.9s
+  E041 | train_loss=0.00133 | val_mse=0.00337 val_rho=-0.0294 val_pred_std=0.00262 val_label_std=0.05617 | 17.0s
+  E042 | train_loss=0.00133 | val_mse=0.00395 val_rho=-0.0373 val_pred_std=0.00300 val_label_std=0.05617 | 15.4s
+  E043 | train_loss=0.00136 | val_mse=0.00363 val_rho=-0.0269 val_pred_std=0.00295 val_label_std=0.05617 | 15.8s
+  E044 | train_loss=0.00127 | val_mse=0.00372 val_rho=-0.0156 val_pred_std=0.00239 val_label_std=0.05617 | 10.8s
+  E045 | train_loss=0.00136 | val_mse=0.00321 val_rho=0.0112 val_pred_std=0.00192 val_label_std=0.05617 | 17.7s
+  E046 | train_loss=0.00133 | val_mse=0.00350 val_rho=0.0055 val_pred_std=0.00163 val_label_std=0.05617 | 17.3s
+  E047 | train_loss=0.00125 | val_mse=0.00362 val_rho=-0.0010 val_pred_std=0.00174 val_label_std=0.05617 | 17.5s
+  E048 | train_loss=0.00131 | val_mse=0.00346 val_rho=0.0054 val_pred_std=0.00189 val_label_std=0.05617 | 17.1s
+  E049 | train_loss=0.00120 | val_mse=0.00365 val_rho=-0.0028 val_pred_std=0.00185 val_label_std=0.05617 | 17.8s
+  E050 | train_loss=0.00110 | val_mse=0.00360 val_rho=-0.0036 val_pred_std=0.00188 val_label_std=0.05617 | 11.2s
+  Test: mse=0.00134 mae=0.02976 rho=-0.0060
+
+============================================================
+Seed 126
+============================================================
+  train: 260 calls
+  val: 70 calls
+  test: 168 calls
+Model: cross_modal | Params: 2,608,129
+C:\Users\cl501_24\.conda\envs\mmecv2\lib\site-packages\torch\utils\data\dataloader.py:666: UserWarning: 'pin_memory' argument is set as true but no accelerator is found, then device pinned memory won't be used.
+  warnings.warn(warn_msg)
+  E001 | train_loss=0.02096 | val_mse=0.00615 val_rho=0.0951 val_pred_std=0.00277 val_label_std=0.05617 | 8.6s
+  E002 | train_loss=0.00259 | val_mse=0.00380 val_rho=0.0361 val_pred_std=0.00347 val_label_std=0.05617 | 8.7s
+  E003 | train_loss=0.00269 | val_mse=0.00328 val_rho=0.0474 val_pred_std=0.00276 val_label_std=0.05617 | 9.3s
+  E004 | train_loss=0.00207 | val_mse=0.00332 val_rho=-0.0018 val_pred_std=0.00235 val_label_std=0.05617 | 8.6s
+  E005 | train_loss=0.00205 | val_mse=0.00377 val_rho=0.0307 val_pred_std=0.00269 val_label_std=0.05617 | 8.6s
+  E006 | train_loss=0.00208 | val_mse=0.00369 val_rho=0.0502 val_pred_std=0.00251 val_label_std=0.05617 | 8.7s
+  E007 | train_loss=0.00174 | val_mse=0.00398 val_rho=0.0372 val_pred_std=0.00224 val_label_std=0.05617 | 9.5s
+  E008 | train_loss=0.00164 | val_mse=0.00389 val_rho=0.0468 val_pred_std=0.00239 val_label_std=0.05617 | 9.3s
+  E009 | train_loss=0.00180 | val_mse=0.00369 val_rho=0.0460 val_pred_std=0.00254 val_label_std=0.05617 | 8.4s
+  E010 | train_loss=0.00160 | val_mse=0.00367 val_rho=0.0451 val_pred_std=0.00256 val_label_std=0.05617 | 8.8s
+  E011 | train_loss=0.00201 | val_mse=0.00471 val_rho=0.0623 val_pred_std=0.00208 val_label_std=0.05617 | 14.4s
+  E012 | train_loss=0.00176 | val_mse=0.00397 val_rho=0.0267 val_pred_std=0.00262 val_label_std=0.05617 | 17.7s
+  E013 | train_loss=0.00185 | val_mse=0.00403 val_rho=0.0334 val_pred_std=0.00242 val_label_std=0.05617 | 12.1s
+  E014 | train_loss=0.00159 | val_mse=0.00363 val_rho=0.0560 val_pred_std=0.00207 val_label_std=0.05617 | 11.2s
+  E015 | train_loss=0.00204 | val_mse=0.00329 val_rho=0.0640 val_pred_std=0.00153 val_label_std=0.05617 | 10.8s
+  E016 | train_loss=0.00173 | val_mse=0.00345 val_rho=0.0596 val_pred_std=0.00188 val_label_std=0.05617 | 13.6s
+  E017 | train_loss=0.00159 | val_mse=0.00386 val_rho=0.0360 val_pred_std=0.00170 val_label_std=0.05617 | 18.1s
+  E018 | train_loss=0.00158 | val_mse=0.00354 val_rho=0.0317 val_pred_std=0.00214 val_label_std=0.05617 | 18.6s
+  Early stop at epoch 18
+  Test: mse=0.00124 mae=0.02735 rho=-0.0644
+
+============================================================
+Seed 168
+============================================================
+  train: 260 calls
+  val: 70 calls
+  test: 168 calls
+Model: cross_modal | Params: 2,608,129
+C:\Users\cl501_24\.conda\envs\mmecv2\lib\site-packages\torch\utils\data\dataloader.py:666: UserWarning: 'pin_memory' argument is set as true but no accelerator is found, then device pinned memory won't be used.
+  warnings.warn(warn_msg)
+  E001 | train_loss=0.01908 | val_mse=0.00408 val_rho=0.0463 val_pred_std=0.00307 val_label_std=0.05617 | 12.8s
+  E002 | train_loss=0.00316 | val_mse=0.00334 val_rho=-0.0053 val_pred_std=0.00156 val_label_std=0.05617 | 16.7s
+  E003 | train_loss=0.00234 | val_mse=0.00317 val_rho=0.0056 val_pred_std=0.00123 val_label_std=0.05617 | 16.8s
+  E004 | train_loss=0.00210 | val_mse=0.00328 val_rho=0.0021 val_pred_std=0.00162 val_label_std=0.05617 | 17.0s
+  E005 | train_loss=0.00196 | val_mse=0.00324 val_rho=0.0524 val_pred_std=0.00160 val_label_std=0.05617 | 16.6s
+  E006 | train_loss=0.00207 | val_mse=0.00316 val_rho=0.0509 val_pred_std=0.00176 val_label_std=0.05617 | 19.7s
+  E007 | train_loss=0.00200 | val_mse=0.00347 val_rho=0.0429 val_pred_std=0.00168 val_label_std=0.05617 | 15.1s
+  E008 | train_loss=0.00192 | val_mse=0.00341 val_rho=0.0449 val_pred_std=0.00165 val_label_std=0.05617 | 16.0s
+  E009 | train_loss=0.00171 | val_mse=0.00353 val_rho=0.0408 val_pred_std=0.00161 val_label_std=0.05617 | 17.2s
+  E010 | train_loss=0.00188 | val_mse=0.00359 val_rho=0.0407 val_pred_std=0.00158 val_label_std=0.05617 | 19.5s
+  E011 | train_loss=0.00174 | val_mse=0.00436 val_rho=0.0347 val_pred_std=0.00152 val_label_std=0.05617 | 17.9s
+  E012 | train_loss=0.00153 | val_mse=0.00362 val_rho=-0.0094 val_pred_std=0.00145 val_label_std=0.05617 | 17.8s
+  E013 | train_loss=0.00187 | val_mse=0.00318 val_rho=0.0129 val_pred_std=0.00170 val_label_std=0.05617 | 18.7s
+  E014 | train_loss=0.00186 | val_mse=0.00323 val_rho=0.0116 val_pred_std=0.00143 val_label_std=0.05617 | 18.1s
+  E015 | train_loss=0.00270 | val_mse=0.00378 val_rho=0.0405 val_pred_std=0.00160 val_label_std=0.05617 | 17.1s
+  E016 | train_loss=0.00192 | val_mse=0.00337 val_rho=0.0610 val_pred_std=0.00156 val_label_std=0.05617 | 15.5s
+  E017 | train_loss=0.00174 | val_mse=0.00359 val_rho=0.0373 val_pred_std=0.00154 val_label_std=0.05617 | 16.8s
+  E018 | train_loss=0.00164 | val_mse=0.00357 val_rho=0.0293 val_pred_std=0.00161 val_label_std=0.05617 | 12.8s
+  E019 | train_loss=0.00163 | val_mse=0.00346 val_rho=0.0424 val_pred_std=0.00165 val_label_std=0.05617 | 8.9s
+  E020 | train_loss=0.00171 | val_mse=0.00356 val_rho=0.0408 val_pred_std=0.00165 val_label_std=0.05617 | 13.5s
+  E021 | train_loss=0.00193 | val_mse=0.00384 val_rho=0.0486 val_pred_std=0.00181 val_label_std=0.05617 | 11.4s
+  Early stop at epoch 21
+  Test: mse=0.00149 mae=0.03314 rho=0.0674
+
+============================================================
+Ensemble Results (5 seeds)
+============================================================
+  mse: 0.00138 ± 0.00008
+  mae: 0.03058 ± 0.00194
+  spearman: 0.00273 ± 0.06436
