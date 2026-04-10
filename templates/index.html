@@ -88,6 +88,18 @@
       color: var(--text-dim);
       display: block;
       margin-bottom: 6px;
+      margin-top: 0;
+    }
+    label[for="searchInput"] {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border-width: 0;
     }
 
     select, input[type="file"] {
@@ -119,7 +131,6 @@
       font-family: inherit;
       font-size: 0.85rem;
       outline: none;
-      margin-bottom: 10px;
       transition: border-color 0.2s;
     }
     .search-input:focus {
@@ -128,6 +139,7 @@
     }
     .search-wrap {
       position: relative;
+      margin-bottom: 10px;
     }
     .search-wrap::before {
       content: "⌕";
@@ -362,6 +374,7 @@
     <div class="card">
       <div class="card-title">Select Earnings Call</div>
 
+      <label for="searchInput">Search</label>
       <div class="search-wrap">
         <input type="text" class="search-input" id="searchInput" placeholder="Search by ticker or date…">
       </div>
@@ -376,7 +389,7 @@
         {% endfor %}
       </div>
 
-      <label>Model</label>
+      <label for="modelSelect">Model</label>
       <select id="modelSelect">
         {% for m in model_types %}
         <option value="{{ m }}" {% if m == 'early_fusion' %}selected{% endif %}>{{ m }}</option>
@@ -389,8 +402,14 @@
 
       <div class="divider">or</div>
 
-      <label>Upload .pt file</label>
-      <input type="file" id="fileInput" accept=".pt" onchange="uploadFile()">
+      <label for="companyInput">Company Name</label>
+      <input type="text" id="companyInput" placeholder="e.g., AAPL" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.85rem;outline:none;margin-bottom:14px;">
+
+      <label for="fileInput">Upload Audio File</label>
+      <input type="file" id="fileInput" accept=".mp3,.wav,.m4a,.flac" style="margin-bottom:14px;">
+
+      <label for="transcriptInput">Upload Transcript (Optional - for better accuracy)</label>
+      <input type="file" id="transcriptInput" accept=".txt" onchange="uploadFile()" style="font-size:0.75rem;">
     </div>
   </div>
 
@@ -398,7 +417,7 @@
   <div class="results-area" id="resultsArea">
     <div class="card empty-state" id="emptyState">
       <div class="icon">📊</div>
-      <p>Select an earnings call from the list or upload a preprocessed <code>.pt</code> file to see volatility predictions across all model variants.</p>
+      <p>Select an earnings call from the list or upload an audio file with company name. Optionally include a transcript (.txt) for better text analysis.</p>
     </div>
   </div>
 </div>
@@ -445,12 +464,12 @@ function riskLabel(val) {
 function renderResults(data) {
   const area = document.getElementById('resultsArea');
   const selected = data.selected_model;
-  const preds = data.predictions[selected] || {};
+  const preds = (data.predictions && data.predictions[selected]) || {};
   const meta = data.meta || {};
 
-  let ticker = meta.ticker || data.call_id.split('_')[0];
+  let ticker = meta.ticker || (data.call_id ? data.call_id.split('_')[0] : 'UNKNOWN');
   let date = meta.date || '';
-  let nUtts = meta.n_utterances || meta.source || '';
+  let nUtts = meta.n_utterances || meta.segments || meta.source || '';
 
   // Header
   let html = `<div class="card">
@@ -458,7 +477,7 @@ function renderResults(data) {
       <span class="ticker-big">${ticker}</span>
       <div class="meta-info">
         <div>${date}</div>
-        <div style="font-size:0.75rem">${typeof nUtts === 'number' ? nUtts + ' utterances' : nUtts} · ${data.call_id}</div>
+        <div style="font-size:0.75rem">${typeof nUtts === 'number' ? nUtts + ' utterances' : nUtts} · ${data.call_id || 'N/A'}</div>
       </div>
     </div>
   </div>`;
@@ -470,7 +489,7 @@ function renderResults(data) {
   const windowLabels = ['1-Day', '3-Day', '7-Day'];
   windows.forEach((w, i) => {
     const v = preds[w];
-    if (v !== undefined) {
+    if (v !== undefined && v !== null) {
       html += `<div class="pred-card">
         <div class="window-label">${windowLabels[i]} Volatility</div>
         <div class="value ${riskClass(v)}">${(v * 100).toFixed(1)}%</div>
@@ -481,38 +500,43 @@ function renderResults(data) {
   html += `</div>`;
 
   // Actual labels if available
-  if (Object.keys(data.actuals).length > 0) {
+  if (data.actuals && Object.keys(data.actuals).length > 0) {
     html += `<div style="margin-top:16px">
       <div class="card-title" style="margin-bottom:8px">Actual (Raw Abnormal Volatility)</div>
       <div class="actual-row">`;
     for (const [k, v] of Object.entries(data.actuals)) {
-      html += `<div class="actual-chip"><span class="label">${k}</span><span class="val">${v.toFixed(5)}</span></div>`;
+      if (v !== undefined && v !== null) {
+        html += `<div class="actual-chip"><span class="label">${k}</span><span class="val">${v.toFixed(5)}</span></div>`;
+      }
     }
     html += `</div></div>`;
   }
   html += `</div>`;
 
   // Model comparison table
-  html += `<div class="card"><div class="card-title">Model Comparison</div>
-  <table class="comp-table"><thead><tr>
-    <th>Model</th>`;
-  windows.forEach((w, i) => { html += `<th>${windowLabels[i]}</th>`; });
-  html += `</tr></thead><tbody>`;
-  for (const [mtype, mpreds] of Object.entries(data.predictions)) {
-    const isSelected = mtype === selected;
-    html += `<tr class="${isSelected ? 'selected-row' : ''}">
-      <td class="model-name">${mtype}${isSelected ? ' ★' : ''}</td>`;
-    windows.forEach(w => {
-      const v = mpreds[w];
-      if (v !== undefined) {
-        html += `<td class="${riskClass(v)}">${(v * 100).toFixed(1)}%</td>`;
-      } else {
-        html += `<td style="color:var(--text-dim)">—</td>`;
-      }
-    });
-    html += `</tr>`;
+  if (data.predictions && Object.keys(data.predictions).length > 0) {
+    html += `<div class="card"><div class="card-title">Model Comparison</div>
+    <table class="comp-table"><thead><tr>
+      <th>Model</th>`;
+    windows.forEach((w, i) => { html += `<th>${windowLabels[i]}</th>`; });
+    html += `</tr></thead><tbody>`;
+    for (const [mtype, mpreds] of Object.entries(data.predictions)) {
+      if (!mpreds) continue;
+      const isSelected = mtype === selected;
+      html += `<tr class="${isSelected ? 'selected-row' : ''}">
+        <td class="model-name">${mtype}${isSelected ? ' ★' : ''}</td>`;
+      windows.forEach(w => {
+        const v = mpreds[w];
+        if (v !== undefined && v !== null) {
+          html += `<td class="${riskClass(v)}">${(v * 100).toFixed(1)}%</td>`;
+        } else {
+          html += `<td style="color:var(--text-dim)">—</td>`;
+        }
+      });
+      html += `</tr>`;
+    }
+    html += `</tbody></table></div>`;
   }
-  html += `</tbody></table></div>`;
 
   area.innerHTML = html;
 }
@@ -533,19 +557,47 @@ function predict() {
     .catch(err => alert('Error: ' + err));
 }
 
+function pollJob(jobId, elapsed) {
+  const area = document.getElementById('resultsArea');
+  const mins = Math.floor(elapsed / 60), secs = elapsed % 60;
+  area.innerHTML = `
+    <div class="card empty-state">
+      <div class="spinner"></div>
+      <p style="margin-top:16px">Processing audio… ${mins}m ${secs}s<br>
+      <span style="font-size:0.75rem;color:var(--text-dim)">Sampling ~30 segments · encoding with wav2vec2</span></p>
+    </div>`;
+  fetch(`/job/${jobId}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === 'pending') {
+        setTimeout(() => pollJob(jobId, elapsed + 3), 3000);
+      } else if (data.status === 'error') {
+        alert('Processing error: ' + data.error);
+      } else {
+        renderResults(data);
+      }
+    })
+    .catch(err => alert('Poll error: ' + err));
+}
+
 function uploadFile() {
   const file = document.getElementById('fileInput').files[0];
-  if (!file) return;
+  const transcript = document.getElementById('transcriptInput').files[0];
+  const company = document.getElementById('companyInput').value.trim();
+  if (!file) { alert('Please select an audio file'); return; }
+  if (!company) { alert('Please enter company name'); return; }
   showLoading();
   const model = document.getElementById('modelSelect').value;
   const fd = new FormData();
   fd.append('file', file);
+  fd.append('company_name', company);
+  if (transcript) fd.append('transcript', transcript);
   fd.append('model_type', model);
   fetch('/upload', { method: 'POST', body: fd })
     .then(r => r.json())
     .then(data => {
       if (data.error) { alert(data.error); return; }
-      renderResults(data);
+      pollJob(data.job_id, 0);
     })
     .catch(err => alert('Error: ' + err));
 }

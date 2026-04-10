@@ -4,7 +4,11 @@ import pandas as pd
 from scipy import stats
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
+from dotenv import load_dotenv
 from src.data_sources import MultiSourceFetcher
+
+# Load environment variables from .env file
+load_dotenv()
 
 
 def _extract_close_series(df, ticker_hint=None):
@@ -135,12 +139,19 @@ def main():
     parser.add_argument("--output", default=None)
     parser.add_argument("--max_calls", type=int, default=None)
     parser.add_argument("--workers", type=int, default=8)
-    parser.add_argument("--alpha_vantage_key", default="1OZTV4XVWLHYGLGK", help="Alpha Vantage API key")
-    parser.add_argument("--polygon_key", default="6bCz9o2yBJx1VnkSa2PDQaVpCIT2eop0", help="Polygon.io API key")
-    parser.add_argument("--fmp_key", default="f2juoA2I8hhjgjKLodPsdC2DqYS9UfDd", help="Financial Modeling Prep API key")
-    parser.add_argument("--tiingo_key", default="294c99a08e420e338d6ab14379639b26e699da8d", help="Tiingo API key")
-    parser.add_argument("--quandl_key", default="hmh75wKz-mfbcZYexuP5", help="Quandl/Nasdaq Data Link API key")
+    parser.add_argument("--alpha_vantage_key", default=None, help="Alpha Vantage API key")
+    parser.add_argument("--polygon_key", default=None, help="Polygon.io API key")
+    parser.add_argument("--fmp_key", default=None, help="Financial Modeling Prep API key")
+    parser.add_argument("--tiingo_key", default=None, help="Tiingo API key")
+    parser.add_argument("--quandl_key", default=None, help="Quandl/Nasdaq Data Link API key")
     args = parser.parse_args()
+
+    # Load API keys from environment variables if not provided via CLI
+    alpha_vantage_key = args.alpha_vantage_key or os.getenv("ALPHA_VANTAGE_KEY")
+    polygon_key = args.polygon_key or os.getenv("POLYGON_KEY")
+    fmp_key = args.fmp_key or os.getenv("FMP_KEY")
+    tiingo_key = args.tiingo_key or os.getenv("TIINGO_KEY")
+    quandl_key = args.quandl_key or os.getenv("QUANDL_KEY")
 
     with open(args.config) as f:
         cfg = yaml.safe_load(f)
@@ -181,7 +192,7 @@ def main():
         )
     ]
 
-    if args.tiingo_key:
+    if tiingo_key:
         stages.append(
             (
                 "Stage 2/6 Tiingo",
@@ -189,30 +200,30 @@ def main():
                     alpha_vantage_key=None,
                     polygon_key=None,
                     fmp_key=None,
-                    tiingo_key=args.tiingo_key,
+                    tiingo_key=tiingo_key,
                     quandl_key=None,
                 ),
             )
         )
-    if args.fmp_key:
+    if fmp_key:
         stages.append(
             (
                 "Stage 3/6 FMP",
                 MultiSourceFetcher(
                     alpha_vantage_key=None,
                     polygon_key=None,
-                    fmp_key=args.fmp_key,
+                    fmp_key=fmp_key,
                     tiingo_key=None,
                     quandl_key=None,
                 ),
             )
         )
-    if args.alpha_vantage_key:
+    if alpha_vantage_key:
         stages.append(
             (
                 "Stage 4/6 Alpha Vantage",
                 MultiSourceFetcher(
-                    alpha_vantage_key=args.alpha_vantage_key,
+                    alpha_vantage_key=alpha_vantage_key,
                     polygon_key=None,
                     fmp_key=None,
                     tiingo_key=None,
@@ -220,20 +231,20 @@ def main():
                 ),
             )
         )
-    if args.polygon_key:
+    if polygon_key:
         stages.append(
             (
                 "Stage 5/6 Polygon",
                 MultiSourceFetcher(
                     alpha_vantage_key=None,
-                    polygon_key=args.polygon_key,
+                    polygon_key=polygon_key,
                     fmp_key=None,
                     tiingo_key=None,
                     quandl_key=None,
                 ),
             )
         )
-    if args.quandl_key:
+    if quandl_key:
         stages.append(
             (
                 "Stage 6/6 Quandl",
@@ -242,7 +253,7 @@ def main():
                     polygon_key=None,
                     fmp_key=None,
                     tiingo_key=None,
-                    quandl_key=args.quandl_key,
+                    quandl_key=quandl_key,
                 ),
             )
         )
@@ -287,23 +298,69 @@ def main():
     ordered_results = [results_by_call[task["call_id"]] for task in tasks]
     df = pd.DataFrame(ordered_results)
 
-    os.makedirs(os.path.dirname(output), exist_ok=True)
-    df.to_csv(output, index=False)
-
     if primary_target not in df.columns:
         df[primary_target] = np.nan
 
-    valid = df.dropna(subset=[primary_target])
-    pct = (len(valid) / len(df) * 100) if len(df) else 0.0
+    print(f"\nRaw data: {len(df)} calls")
+    original_count = len(df)
+
+    # Clean the data
+    print("\nCleaning labels...")
+    
+    # 1. Remove rows where beta=1.0 AND r2=1.0 (failed data fetch)
+    suspicious_market_model = (df['beta'] == 1.0) & (df['r2'] == 1.0)
+    print(f"  Removing {suspicious_market_model.sum()} calls with beta=1.0 & r2=1.0")
+    df = df[~suspicious_market_model]
+
+    # 2. Remove rows where abnormal_vol_3d is exactly 0.0 (suspicious)
+    zero_vol = (df[primary_target] == 0.0)
+    print(f"  Removing {zero_vol.sum()} calls with exactly 0.0 volatility")
+    df = df[~zero_vol]
+
+    # 3. Remove rows with missing target
+    missing_target = df[primary_target].isna()
+    print(f"  Removing {missing_target.sum()} calls with missing target")
+    df = df[~missing_target]
+
+    # 4. Remove extreme outliers (>99.5th percentile)
+    if len(df) > 0:
+        threshold = df[primary_target].quantile(0.995)
+        outliers = df[primary_target] > threshold
+        print(f"  Removing {outliers.sum()} extreme outliers (>{threshold:.4f})")
+        df = df[~outliers]
+
+    # 5. Remove rows with very low r2 (<0.01) - poor market model fit
+    low_r2 = df['r2'] < 0.01
+    print(f"  Removing {low_r2.sum()} calls with r2 < 0.01")
+    df = df[~low_r2]
+
+    print(f"\nCleaned: {len(df)} calls ({len(df)/original_count*100:.1f}% retained)")
+
+    os.makedirs(os.path.dirname(output), exist_ok=True)
+    df.to_csv(output, index=False)
 
     print(f"\n{'='*60}")
-    print(f"Done. {len(valid)}/{len(df)} calls have valid labels ({pct:.1f}%)")
+    print(f"Done. Saved {len(df)} clean calls")
     print(f"Output: {output}")
     print(f"{'='*60}")
-    if len(valid):
-        print(f"Target stats:\n{valid[primary_target].describe()}")
+    if len(df):
+        print(f"\nTarget stats:")
+        print(f"  Mean: {df[primary_target].mean():.6f}")
+        print(f"  Std: {df[primary_target].std():.6f}")
+        print(f"  Min: {df[primary_target].min():.6f}")
+        print(f"  25%: {df[primary_target].quantile(0.25):.6f}")
+        print(f"  50%: {df[primary_target].quantile(0.50):.6f}")
+        print(f"  75%: {df[primary_target].quantile(0.75):.6f}")
+        print(f"  Max: {df[primary_target].max():.6f}")
+        
+        # Date distribution
+        df['call_date'] = pd.to_datetime(df['call_date'])
+        print(f"\nDate distribution:")
+        print(f"  2017-04 to 2017-10 (train): {((df['call_date'] >= '2017-04-24') & (df['call_date'] <= '2017-10-31')).sum()}")
+        print(f"  2017-11 to 2017-12 (val): {((df['call_date'] >= '2017-11-01') & (df['call_date'] <= '2017-12-31')).sum()}")
+        print(f"  2018-01 to 2018-06 (test): {((df['call_date'] >= '2018-01-01') & (df['call_date'] <= '2018-06-21')).sum()}")
     else:
-        print("Target stats: no valid rows yet")
+        print("Target stats: no valid rows")
 
 
 if __name__ == "__main__":

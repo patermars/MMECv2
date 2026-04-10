@@ -11,3 +11,5 @@ pandas-market-calendars
 tqdm
 pyyaml
 requests
+flask>=2.0.0
+python-dotenv

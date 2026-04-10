@@ -3,3 +3,5 @@ dataset/
 *.pt
 mmecv2/
 *.pyc
+.env
+FAST_INFERENCE.md
