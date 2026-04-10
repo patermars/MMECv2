@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MMEC · Earnings Call Risk Predictor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0e17;
+      --surface: #111827;
+      --surface2: #1a2235;
+      --border: #1f2937;
+      --accent: #6366f1;
+      --accent-glow: rgba(99,102,241,0.25);
+      --green: #10b981;
+      --red: #ef4444;
+      --amber: #f59e0b;
+      --text: #e5e7eb;
+      --text-dim: #9ca3af;
+      --radius: 12px;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .header {
+      padding: 24px 32px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(180deg, rgba(99,102,241,0.06) 0%, transparent 100%);
+    }
+    .header h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #818cf8, #6366f1, #4f46e5);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.02em;
+    }
+    .header .badge {
+      font-size: 0.7rem;
+      font-weight: 500;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 20px;
+      color: var(--text-dim);
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 24px;
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 28px;
+    }
+
+    /* Sidebar */
+    .sidebar { display: flex; flex-direction: column; gap: 20px; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .card-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      margin-bottom: 14px;
+    }
+
+    label {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-dim);
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    select, input[type="file"] {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: 14px;
+    }
+    select:focus, input[type="file"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    select option { background: var(--surface); }
+
+    .search-input {
+      width: 100%;
+      padding: 9px 12px 9px 34px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.85rem;
+      outline: none;
+      margin-bottom: 10px;
+      transition: border-color 0.2s;
+    }
+    .search-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    .search-wrap {
+      position: relative;
+    }
+    .search-wrap::before {
+      content: "⌕";
+      position: absolute;
+      left: 11px;
+      top: 9px;
+      font-size: 0.9rem;
+      color: var(--text-dim);
+      pointer-events: none;
+    }
+
+    .call-list {
+      max-height: 240px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 14px;
+    }
+    .call-list::-webkit-scrollbar { width: 5px; }
+    .call-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .call-item {
+      padding: 8px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      transition: background 0.15s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.82rem;
+    }
+    .call-item:hover { background: var(--surface2); }
+    .call-item.selected { background: rgba(99,102,241,0.12); border-left: 3px solid var(--accent); }
+    .call-item .ticker {
+      font-weight: 600;
+      color: var(--text);
+      min-width: 55px;
+    }
+    .call-item .date {
+      color: var(--text-dim);
+      font-size: 0.75rem;
+    }
+    .call-item .utts {
+      color: var(--text-dim);
+      font-size: 0.7rem;
+      background: var(--surface2);
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 11px;
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: white;
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px var(--accent-glow);
+    }
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .divider {
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.75rem;
+      margin: 4px 0;
+      position: relative;
+    }
+    .divider::before, .divider::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 40%;
+      height: 1px;
+      background: var(--border);
+    }
+    .divider::before { left: 0; }
+    .divider::after { right: 0; }
+
+    /* Results area */
+    .results-area { display: flex; flex-direction: column; gap: 20px; }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 400px;
+      text-align: center;
+      color: var(--text-dim);
+    }
+    .empty-state .icon { font-size: 3rem; margin-bottom: 16px; opacity: 0.4; }
+    .empty-state p { font-size: 0.9rem; max-width: 300px; line-height: 1.6; }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .result-header .ticker-big {
+      font-size: 1.8rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #818cf8, #6366f1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .result-header .meta-info {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+    }
+
+    /* Prediction cards grid */
+    .pred-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    .pred-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      text-align: center;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .pred-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+    .pred-card .window-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      margin-bottom: 10px;
+    }
+    .pred-card .value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .pred-card .sub {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+    }
+    .risk-low { color: var(--green); }
+    .risk-med { color: var(--amber); }
+    .risk-high { color: var(--red); }
+
+    /* Model comparison table */
+    .comp-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+    .comp-table th {
+      text-align: left;
+      padding: 10px 14px;
+      font-weight: 600;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-dim);
+      border-bottom: 1px solid var(--border);
+    }
+    .comp-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    .comp-table tr:hover td { background: rgba(255,255,255,0.02); }
+    .comp-table .model-name { font-weight: 600; }
+    .comp-table .selected-row td { background: rgba(99,102,241,0.08); }
+
+    /* Actual labels */
+    .actual-row {
+      display: flex;
+      gap: 16px;
+      margin-top: 10px;
+    }
+    .actual-chip {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 0.78rem;
+    }
+    .actual-chip .label { color: var(--text-dim); font-size: 0.68rem; display: block; margin-bottom: 2px; }
+    .actual-chip .val { font-weight: 600; }
+
+    .spinner {
+      border: 3px solid var(--border);
+      border-top: 3px solid var(--accent);
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 768px) {
+      .container { grid-template-columns: 1fr; }
+      .pred-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>MMEC · Earnings Call Risk Predictor</h1>
+  <span class="badge">{{ model_types|length }} models · {{ calls|length }} calls</span>
+</div>
+
+<div class="container">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="card">
+      <div class="card-title">Select Earnings Call</div>
+
+      <div class="search-wrap">
+        <input type="text" class="search-input" id="searchInput" placeholder="Search by ticker or date…">
+      </div>
+
+      <div class="call-list" id="callList">
+        {% for c in calls %}
+        <div class="call-item" data-id="{{ c.call_id }}" onclick="selectCall(this, '{{ c.call_id }}')">
+          <span class="ticker">{{ c.ticker }}</span>
+          <span class="date">{{ c.date }}</span>
+          <span class="utts">{{ c.n_utts }} utts</span>
+        </div>
+        {% endfor %}
+      </div>
+
+      <label>Model</label>
+      <select id="modelSelect">
+        {% for m in model_types %}
+        <option value="{{ m }}" {% if m == 'early_fusion' %}selected{% endif %}>{{ m }}</option>
+        {% endfor %}
+      </select>
+
+      <button class="btn btn-primary" id="predictBtn" disabled onclick="predict()">
+        Run Prediction
+      </button>
+
+      <div class="divider">or</div>
+
+      <label>Upload .pt file</label>
+      <input type="file" id="fileInput" accept=".pt" onchange="uploadFile()">
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="results-area" id="resultsArea">
+    <div class="card empty-state" id="emptyState">
+      <div class="icon">📊</div>
+      <p>Select an earnings call from the list or upload a preprocessed <code>.pt</code> file to see volatility predictions across all model variants.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+let selectedCallId = null;
+
+// Search filter
+document.getElementById('searchInput').addEventListener('input', function() {
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('.call-item').forEach(item => {
+    const text = item.textContent.toLowerCase();
+    item.style.display = text.includes(q) ? '' : 'none';
+  });
+});
+
+function selectCall(el, callId) {
+  document.querySelectorAll('.call-item').forEach(i => i.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedCallId = callId;
+  document.getElementById('predictBtn').disabled = false;
+}
+
+function showLoading() {
+  document.getElementById('resultsArea').innerHTML = `
+    <div class="card empty-state">
+      <div class="spinner"></div>
+      <p style="margin-top:16px">Running inference…</p>
+    </div>`;
+}
+
+function riskClass(val) {
+  if (val < 0.35) return 'risk-low';
+  if (val < 0.65) return 'risk-med';
+  return 'risk-high';
+}
+
+function riskLabel(val) {
+  if (val < 0.35) return 'Low Risk';
+  if (val < 0.65) return 'Moderate';
+  return 'High Risk';
+}
+
+function renderResults(data) {
+  const area = document.getElementById('resultsArea');
+  const selected = data.selected_model;
+  const preds = data.predictions[selected] || {};
+  const meta = data.meta || {};
+
+  let ticker = meta.ticker || data.call_id.split('_')[0];
+  let date = meta.date || '';
+  let nUtts = meta.n_utterances || meta.source || '';
+
+  // Header
+  let html = `<div class="card">
+    <div class="result-header">
+      <span class="ticker-big">${ticker}</span>
+      <div class="meta-info">
+        <div>${date}</div>
+        <div style="font-size:0.75rem">${typeof nUtts === 'number' ? nUtts + ' utterances' : nUtts} · ${data.call_id}</div>
+      </div>
+    </div>
+  </div>`;
+
+  // Primary prediction cards
+  html += `<div class="card"><div class="card-title">Predicted Volatility Rank (${selected})</div>
+  <div class="pred-grid">`;
+  const windows = ['1-day', '3-day', '7-day'];
+  const windowLabels = ['1-Day', '3-Day', '7-Day'];
+  windows.forEach((w, i) => {
+    const v = preds[w];
+    if (v !== undefined) {
+      html += `<div class="pred-card">
+        <div class="window-label">${windowLabels[i]} Volatility</div>
+        <div class="value ${riskClass(v)}">${(v * 100).toFixed(1)}%</div>
+        <div class="sub">${riskLabel(v)}</div>
+      </div>`;
+    }
+  });
+  html += `</div>`;
+
+  // Actual labels if available
+  if (Object.keys(data.actuals).length > 0) {
+    html += `<div style="margin-top:16px">
+      <div class="card-title" style="margin-bottom:8px">Actual (Raw Abnormal Volatility)</div>
+      <div class="actual-row">`;
+    for (const [k, v] of Object.entries(data.actuals)) {
+      html += `<div class="actual-chip"><span class="label">${k}</span><span class="val">${v.toFixed(5)}</span></div>`;
+    }
+    html += `</div></div>`;
+  }
+  html += `</div>`;
+
+  // Model comparison table
+  html += `<div class="card"><div class="card-title">Model Comparison</div>
+  <table class="comp-table"><thead><tr>
+    <th>Model</th>`;
+  windows.forEach((w, i) => { html += `<th>${windowLabels[i]}</th>`; });
+  html += `</tr></thead><tbody>`;
+  for (const [mtype, mpreds] of Object.entries(data.predictions)) {
+    const isSelected = mtype === selected;
+    html += `<tr class="${isSelected ? 'selected-row' : ''}">
+      <td class="model-name">${mtype}${isSelected ? ' ★' : ''}</td>`;
+    windows.forEach(w => {
+      const v = mpreds[w];
+      if (v !== undefined) {
+        html += `<td class="${riskClass(v)}">${(v * 100).toFixed(1)}%</td>`;
+      } else {
+        html += `<td style="color:var(--text-dim)">—</td>`;
+      }
+    });
+    html += `</tr>`;
+  }
+  html += `</tbody></table></div>`;
+
+  area.innerHTML = html;
+}
+
+function predict() {
+  if (!selectedCallId) return;
+  showLoading();
+  const model = document.getElementById('modelSelect').value;
+  const fd = new FormData();
+  fd.append('call_id', selectedCallId);
+  fd.append('model_type', model);
+  fetch('/predict', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) { alert(data.error); return; }
+      renderResults(data);
+    })
+    .catch(err => alert('Error: ' + err));
+}
+
+function uploadFile() {
+  const file = document.getElementById('fileInput').files[0];
+  if (!file) return;
+  showLoading();
+  const model = document.getElementById('modelSelect').value;
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('model_type', model);
+  fetch('/upload', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) { alert(data.error); return; }
+      renderResults(data);
+    })
+    .catch(err => alert('Error: ' + err));
+}
+</script>
+</body>
+</html>

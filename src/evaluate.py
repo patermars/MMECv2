@@ -5,7 +5,7 @@ from src.dataset import get_dataloaders
 
 
 @torch.no_grad()
-def run_evaluation(model, loader, device):
+def run_evaluation(model, loader, device, primary_idx=None):
     model.eval()
     all_preds, all_labels, all_ids = [], [], []
 
@@ -18,8 +18,19 @@ def run_evaluation(model, loader, device):
         with torch.cuda.amp.autocast(enabled=(device != "cpu")):
             preds = model(acoustic, text_emb, wav_emb, mask)
 
-        all_preds.extend(preds.cpu().numpy().tolist())
-        all_labels.extend(batch["labels"].numpy().tolist())
+        # Extract primary target if multi-task
+        if preds.dim() == 2 and primary_idx is not None:
+            p = preds[:, primary_idx]
+            l = batch["labels"][:, primary_idx]
+        elif preds.dim() == 2:
+            p = preds[:, 0]
+            l = batch["labels"][:, 0]
+        else:
+            p = preds
+            l = batch["labels"]
+
+        all_preds.extend(p.cpu().numpy().tolist())
+        all_labels.extend(l.numpy().tolist())
         all_ids.extend(batch["call_ids"])
 
     preds = np.array(all_preds)
@@ -68,7 +79,15 @@ def main():
     loaders = get_dataloaders(cfg)
     loader = loaders[args.split]
 
-    metrics = run_evaluation(model, loader, device)
+    # Determine primary index for multi-task
+    multi_task = cfg["label"].get("multi_task", False)
+    mt_targets = cfg["label"].get("multi_task_targets", [])
+    primary_target = cfg["label"].get("primary_target", "abnormal_vol_3d")
+    primary_idx = None
+    if multi_task and mt_targets and primary_target in mt_targets:
+        primary_idx = mt_targets.index(primary_target)
+
+    metrics = run_evaluation(model, loader, device, primary_idx)
     print(f"\n{'='*50}")
     print(f"Evaluation on {args.split} set ({metrics['n_samples']} samples)")
     print(f"{'='*50}")
@@ -91,7 +110,7 @@ def main():
             continue
         m = build_model(cfg, mtype).to(device)
         m.load_state_dict(torch.load(ckpt, map_location=device, weights_only=True))
-        met = run_evaluation(m, loader, device)
+        met = run_evaluation(m, loader, device, primary_idx)
         print(f"  {mtype:15s} | ρ={met['spearman_rho']:.4f} "
               f"MAE={met['mae']:.5f} RMSE={met['rmse']:.5f}")
 

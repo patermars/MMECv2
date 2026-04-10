@@ -1,7 +1,6 @@
-import os, csv, argparse, yaml
+import os, argparse, yaml
 import numpy as np
 import pandas as pd
-import yfinance as yf
 from scipy import stats
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
@@ -50,10 +49,10 @@ def compute_abnormal_vol(ticker, call_date, est_window=200, event_windows=[1, 3,
     try:
         if fetcher is None:
             fetcher = MultiSourceFetcher()
-        
+
         stock = fetcher.fetch(ticker, start_est, end_event)
         mkt = fetcher.fetch("SPY", start_est, end_event)
-        
+
         if stock.empty or mkt.empty:
             return _empty(event_windows)
 
@@ -98,7 +97,7 @@ def compute_abnormal_vol(ticker, call_date, est_window=200, event_windows=[1, 3,
 
 
 def _empty(windows):
-    labels = {}
+    labels = {"alpha": np.nan, "beta": np.nan, "r2": np.nan}
     for w in windows:
         labels[f"abnormal_ret_{w}d"] = np.nan
         labels[f"abnormal_vol_{w}d"] = np.nan
@@ -109,6 +108,24 @@ def process_one(args_tuple):
     call_id, ticker, call_date, est_window, event_windows, fetcher = args_tuple
     labels = compute_abnormal_vol(ticker, call_date, est_window, event_windows, fetcher)
     return {"call_id": call_id, "ticker": ticker, "call_date": call_date, **labels}
+
+
+def _run_stage(stage_name, stage_tasks, fetcher, workers):
+    stage_results = []
+    with ThreadPoolExecutor(max_workers=workers) as exe:
+        futures = {
+            exe.submit(
+                process_one,
+                (task["call_id"], task["ticker"], task["call_date"], task["est_window"], task["event_windows"], fetcher),
+            ): task["call_id"]
+            for task in stage_tasks
+        }
+        for future in tqdm(as_completed(futures), total=len(futures), desc=stage_name):
+            try:
+                stage_results.append(future.result())
+            except Exception:
+                pass
+    return stage_results
 
 
 def main():
@@ -131,57 +148,162 @@ def main():
     output = args.output or cfg["data"]["labels_path"]
     est_window = cfg["label"]["estimation_window"]
     event_windows = cfg["label"]["event_windows"]
+    primary_target = cfg["label"]["primary_target"]
 
     manifest = pd.read_csv(args.manifest)
     if args.max_calls:
         manifest = manifest.head(args.max_calls)
-    
-    fetcher = MultiSourceFetcher(
-        alpha_vantage_key=args.alpha_vantage_key,
-        polygon_key=args.polygon_key,
-        fmp_key=args.fmp_key,
-        tiingo_key=args.tiingo_key,
-        quandl_key=args.quandl_key
-    )
 
     tasks = []
     for _, row in manifest.iterrows():
-        tasks.append((row["call_id"], row["ticker"], row["call_date"],
-                       est_window, event_windows, fetcher))
+        tasks.append(
+            {
+                "call_id": row["call_id"],
+                "ticker": row["ticker"],
+                "call_date": row["call_date"],
+                "est_window": est_window,
+                "event_windows": event_windows,
+            }
+        )
 
-    print(f"Fetching labels for {len(tasks)} calls with {args.workers} workers...")
-    sources_enabled = ["yfinance", "Yahoo Direct", "Yahoo v8", "pandas_datareader", "Twelve Data", "EOD Historical", "World Trading Data"]
+    # Build staged fallback fetchers so APIs are used one-by-one:
+    # free sources -> Tiingo -> FMP -> Alpha Vantage -> Polygon -> Quandl
+    stages = [
+        (
+            "Stage 1/6 Free Sources",
+            MultiSourceFetcher(
+                alpha_vantage_key=None,
+                polygon_key=None,
+                fmp_key=None,
+                tiingo_key=None,
+                quandl_key=None,
+            ),
+        )
+    ]
+
     if args.tiingo_key:
-        sources_enabled.insert(3, "Tiingo")
+        stages.append(
+            (
+                "Stage 2/6 Tiingo",
+                MultiSourceFetcher(
+                    alpha_vantage_key=None,
+                    polygon_key=None,
+                    fmp_key=None,
+                    tiingo_key=args.tiingo_key,
+                    quandl_key=None,
+                ),
+            )
+        )
     if args.fmp_key:
-        sources_enabled.insert(4, "FMP")
+        stages.append(
+            (
+                "Stage 3/6 FMP",
+                MultiSourceFetcher(
+                    alpha_vantage_key=None,
+                    polygon_key=None,
+                    fmp_key=args.fmp_key,
+                    tiingo_key=None,
+                    quandl_key=None,
+                ),
+            )
+        )
     if args.alpha_vantage_key:
-        sources_enabled.append("Alpha Vantage")
+        stages.append(
+            (
+                "Stage 4/6 Alpha Vantage",
+                MultiSourceFetcher(
+                    alpha_vantage_key=args.alpha_vantage_key,
+                    polygon_key=None,
+                    fmp_key=None,
+                    tiingo_key=None,
+                    quandl_key=None,
+                ),
+            )
+        )
     if args.polygon_key:
-        sources_enabled.append("Polygon.io")
+        stages.append(
+            (
+                "Stage 5/6 Polygon",
+                MultiSourceFetcher(
+                    alpha_vantage_key=None,
+                    polygon_key=args.polygon_key,
+                    fmp_key=None,
+                    tiingo_key=None,
+                    quandl_key=None,
+                ),
+            )
+        )
     if args.quandl_key:
-        sources_enabled.append("Quandl")
-    print(f"  Active sources ({len(sources_enabled)}): {', '.join(sources_enabled[:6])}{'...' if len(sources_enabled) > 6 else ''}")
+        stages.append(
+            (
+                "Stage 6/6 Quandl",
+                MultiSourceFetcher(
+                    alpha_vantage_key=None,
+                    polygon_key=None,
+                    fmp_key=None,
+                    tiingo_key=None,
+                    quandl_key=args.quandl_key,
+                ),
+            )
+        )
 
-    results = []
-    with ThreadPoolExecutor(max_workers=args.workers) as exe:
-        futures = {exe.submit(process_one, t): t[0] for t in tasks}
-        for future in tqdm(as_completed(futures), total=len(futures), desc="Labels"):
-            try:
-                results.append(future.result())
-            except Exception:
-                pass
+    print(f"Fetching labels for {len(tasks)} calls with staged fallback and {args.workers} workers/stage...")
 
-    df = pd.DataFrame(results)
+    # Start with empty rows for every call_id so output always has all manifest rows.
+    results_by_call = {
+        task["call_id"]: {
+            "call_id": task["call_id"],
+            "ticker": task["ticker"],
+            "call_date": task["call_date"],
+            **_empty(event_windows),
+        }
+        for task in tasks
+    }
+
+    unresolved = {task["call_id"] for task in tasks}
+    task_lookup = {task["call_id"]: task for task in tasks}
+
+    for stage_name, stage_fetcher in stages:
+        if not unresolved:
+            break
+
+        stage_tasks = [task_lookup[call_id] for call_id in unresolved]
+        print(f"\n{stage_name}: processing {len(stage_tasks)} unresolved calls")
+        stage_results = _run_stage(stage_name, stage_tasks, stage_fetcher, args.workers)
+
+        for row in stage_results:
+            results_by_call[row["call_id"]] = row
+
+        unresolved = {
+            call_id
+            for call_id in unresolved
+            if pd.isna(results_by_call[call_id].get(primary_target, np.nan))
+        }
+        print(f"{stage_name}: resolved {len(tasks) - len(unresolved)}/{len(tasks)} total")
+
+    if unresolved:
+        print(f"\nUnresolved after all stages: {len(unresolved)}")
+
+    ordered_results = [results_by_call[task["call_id"]] for task in tasks]
+    df = pd.DataFrame(ordered_results)
+
     os.makedirs(os.path.dirname(output), exist_ok=True)
     df.to_csv(output, index=False)
 
-    valid = df.dropna(subset=[cfg["label"]["primary_target"]])
+    if primary_target not in df.columns:
+        df[primary_target] = np.nan
+
+    valid = df.dropna(subset=[primary_target])
+    pct = (len(valid) / len(df) * 100) if len(df) else 0.0
+
     print(f"\n{'='*60}")
-    print(f"Done. {len(valid)}/{len(df)} calls have valid labels ({len(valid)/len(df)*100:.1f}%)")
+    print(f"Done. {len(valid)}/{len(df)} calls have valid labels ({pct:.1f}%)")
     print(f"Output: {output}")
     print(f"{'='*60}")
-    print(f"Target stats:\n{valid[cfg['label']['primary_target']].describe()}")
+    if len(valid):
+        print(f"Target stats:\n{valid[primary_target].describe()}")
+    else:
+        print("Target stats: no valid rows yet")
 
 
 if __name__ == "__main__":
