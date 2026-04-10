@@ -1,41 +1,7 @@
-.env
-solution.md
-
-# data
-data/raw/
-data/processed/
-data/splits/
-
-# documents
-*.doc
-*.docx
-*.odt
-*.pdf
-*.rtf
-
-# python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-*.egg-info/
-dist/
-build/
-.eggs/
-
-# env
-venv/
-.venv/
-*.env
+checkpoints/
+dataset/
+*.pt
 mmecv2/
-
-# jupyter
-.ipynb_checkpoints/
-
-# tools
-.wandb/
-wandb/
-
-#dataset
-ACL19_Release/
+*.pyc
+.env
+FAST_INFERENCE.md

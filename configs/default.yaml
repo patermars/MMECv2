@@ -1,66 +1,57 @@
-paths:
-  # ACL19 dataset root — override with --acl19-root on Colab
-  acl19_root: ACL19_Release
-
-  # Processed outputs
-  transcripts: data/processed/transcripts   # parsed call JSON files
-  labels:      data/processed/labels        # labels.csv
-  splits:      data/splits                  # train/val/test CSVs
-
-  # Optional: company -> ticker mapping
-  ticker_map:  data/raw/ticker_map.json
+data:
+  dataset_dir: "dataset/sp1500_earningscall"
+  processed_dir: "data/processed"
+  labels_path: "data/processed/labels.csv"
+  max_utterances: 200
+  min_utterances: 5
 
 audio:
-  target_sr:       16000
-  min_duration_s:  1.5     # sentences shorter than this are dropped
-
-features:
-  feature_set: egemaps   # 88-dim, suited for ~500-call dataset
-  audio_dim:   88
-  text_dim:    768        # FinBERT CLS
-  ling_dim:    7          # Loughran-McDonald
+  sample_rate: 16000
+  n_acoustic_features: 29
 
 text:
-  finbert_model: ProsusAI/finbert
-  max_length:    512
+  model_name: "ProsusAI/finbert"
+  max_length: 512
+  embedding_dim: 768
 
-labels:
-  estimation_window: 200
-  event_windows:     [1, 3, 7]
-  primary_target:    abnormal_vol_3d
-
-splits:
-  train: 0.70
-  val:   0.15
-  test:  0.15
-  seed:  42
+wav2vec:
+  model_name: "facebook/wav2vec2-base"
+  embedding_dim: 768
 
 model:
-  audio_dim:    88
-  text_dim:     768
-  hidden_dim:   128
-  n_heads:      2
+  hidden_dim: 32
+  n_heads: 4
+  dropout: 0.5
   n_structured: 5
-  dropout:      0.4
-  n_layers:     1
 
 training:
-  device:              cpu   # auto-detected: cuda if available, else cpu
-  batch_size:          16
-  lr:                  0.0005
-  finbert_lr:          0.00002
-  weight_decay:        0.05
-  max_epochs:          100
-  patience:            20
-  gradient_clip:       1.0
-  loss_mse_weight:     0.7
-  loss_rank_weight:    0.3
-  finbert_unfreeze_epoch: 5
-  warmup_pct:          0.1
-  seed:                42
-  target_transform:    rank    # "rank" or "zscore"
-  multi_window:        true    # use 1d+3d+7d windows to 3× dataset
+  epochs: 50
+  batch_size: 8
+  num_workers: 0
+  pin_memory: true
+  lr: 1.0e-4
+  weight_decay: 1.0e-2
+  grad_clip: 1.0
+  patience: 25
+  n_seeds: 5
+  loss: "huber_rank"
+  rank_loss_weight: 1.0
+  huber_delta: 0.01
+  model_selection: "spearman"
+  warmup_epochs: 5
 
-augmentation:
-  feature_noise_std:   0.05
-  feature_dropout_p:   0.15
+splits:
+  train: ["2017-04-24", "2017-10-31"]
+  val: ["2017-11-01", "2017-12-31"]
+  test: ["2018-01-01", "2018-06-21"]
+
+label:
+  estimation_window: 200
+  event_windows: [1, 3, 7]
+  primary_target: "abnormal_vol_3d"
+  filter_degenerate: true
+  filter_zeros: true
+  rank_transform: true
+  multi_task: true
+  multi_task_targets: ["abnormal_vol_1d", "abnormal_vol_3d", "abnormal_vol_7d"]
+  primary_task_weight: 2.0
