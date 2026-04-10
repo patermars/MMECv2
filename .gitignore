@@ -1,4 +1,3 @@
-checkpoints/
 dataset/
 *.pt
 mmecv2/
