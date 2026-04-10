@@ -113,53 +113,9 @@ def get_actual_labels(call_id):
 # ---------------------------------------------------------------------------
 @app.route("/")
 def index():
-    calls = []
-    for _, row in MANIFEST.iterrows():
-        calls.append({
-            "call_id": row["call_id"],
-            "ticker": row["ticker"],
-            "date": row["call_date"],
-            "n_utts": int(row["n_utterances"]),
-        })
     return render_template("index.html",
-                           calls=calls,
                            model_types=list(MODELS.keys()))
 
-
-@app.route("/predict", methods=["POST"])
-def predict():
-    call_id = request.form.get("call_id", "")
-    model_type = request.form.get("model_type", "early_fusion")
-
-    pt_path = os.path.join(PROCESSED_DIR, f"{call_id}.pt")
-    if not os.path.exists(pt_path):
-        return jsonify({"error": f"File not found: {call_id}.pt"}), 404
-
-    # Get call metadata
-    call_row = MANIFEST[MANIFEST["call_id"] == call_id]
-    meta = {}
-    if not call_row.empty:
-        r = call_row.iloc[0]
-        meta = {"ticker": r["ticker"], "date": r["call_date"],
-                "n_utterances": int(r["n_utterances"])}
-
-    # Run all models for comparison
-    all_predictions = {}
-    for mtype in MODELS:
-        preds, err = run_inference(pt_path, mtype)
-        if preds:
-            all_predictions[mtype] = preds
-
-    # Get actual labels
-    actuals = get_actual_labels(call_id)
-
-    return jsonify({
-        "call_id": call_id,
-        "meta": meta,
-        "selected_model": model_type,
-        "predictions": all_predictions,
-        "actuals": actuals,
-    })
 
 
 def extract_acoustic_features(audio, sr=16000):

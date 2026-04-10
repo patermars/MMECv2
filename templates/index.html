@@ -90,19 +90,8 @@
       margin-bottom: 6px;
       margin-top: 0;
     }
-    label[for="searchInput"] {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0,0,0,0);
-      white-space: nowrap;
-      border-width: 0;
-    }
 
-    select, input[type="file"] {
+    select, input[type="file"], input[type="text"] {
       width: 100%;
       padding: 10px 12px;
       background: var(--surface2);
@@ -115,79 +104,11 @@
       transition: border-color 0.2s;
       margin-bottom: 14px;
     }
-    select:focus, input[type="file"]:focus {
+    select:focus, input[type="file"]:focus, input[type="text"]:focus {
       border-color: var(--accent);
       box-shadow: 0 0 0 3px var(--accent-glow);
     }
     select option { background: var(--surface); }
-
-    .search-input {
-      width: 100%;
-      padding: 9px 12px 9px 34px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      font-family: inherit;
-      font-size: 0.85rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    .search-input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-glow);
-    }
-    .search-wrap {
-      position: relative;
-      margin-bottom: 10px;
-    }
-    .search-wrap::before {
-      content: "⌕";
-      position: absolute;
-      left: 11px;
-      top: 9px;
-      font-size: 0.9rem;
-      color: var(--text-dim);
-      pointer-events: none;
-    }
-
-    .call-list {
-      max-height: 240px;
-      overflow-y: auto;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      margin-bottom: 14px;
-    }
-    .call-list::-webkit-scrollbar { width: 5px; }
-    .call-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-    .call-item {
-      padding: 8px 12px;
-      cursor: pointer;
-      border-bottom: 1px solid rgba(255,255,255,0.03);
-      transition: background 0.15s;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.82rem;
-    }
-    .call-item:hover { background: var(--surface2); }
-    .call-item.selected { background: rgba(99,102,241,0.12); border-left: 3px solid var(--accent); }
-    .call-item .ticker {
-      font-weight: 600;
-      color: var(--text);
-      min-width: 55px;
-    }
-    .call-item .date {
-      color: var(--text-dim);
-      font-size: 0.75rem;
-    }
-    .call-item .utts {
-      color: var(--text-dim);
-      font-size: 0.7rem;
-      background: var(--surface2);
-      padding: 2px 8px;
-      border-radius: 10px;
-    }
 
     .btn {
       width: 100%;
@@ -209,29 +130,76 @@
       transform: translateY(-1px);
       box-shadow: 0 6px 20px var(--accent-glow);
     }
+    .btn-secondary {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      margin-top: 10px;
+    }
+    .btn-secondary:hover {
+      background: var(--surface);
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .btn-tradingview {
+      background: linear-gradient(135deg, #2962ff, #1e53e5);
+      color: white;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      box-shadow: 0 4px 14px rgba(41, 98, 255, 0.25);
+    }
+    .btn-tradingview:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(41, 98, 255, 0.35);
+    }
+    .btn-tradingview svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .tradingview-container {
+      width: 100%;
+      height: 500px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--surface2);
+    }
+    .tradingview-container iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    #tradingviewChart {
+      display: none;
+    }
+    #tradingviewChart.visible {
+      display: block;
+    }
+
+    .action-bar {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
     .btn-primary:disabled {
       opacity: 0.5;
       cursor: not-allowed;
       transform: none;
     }
-
-    .divider {
-      text-align: center;
-      color: var(--text-dim);
-      font-size: 0.75rem;
-      margin: 4px 0;
-      position: relative;
-    }
-    .divider::before, .divider::after {
-      content: "";
-      position: absolute;
-      top: 50%;
-      width: 40%;
-      height: 1px;
-      background: var(--border);
-    }
-    .divider::before { left: 0; }
-    .divider::after { right: 0; }
 
     /* Results area */
     .results-area { display: flex; flex-direction: column; gap: 20px; }
@@ -365,42 +333,14 @@
 
 <div class="header">
   <h1>MMEC · Earnings Call Risk Predictor</h1>
-  <span class="badge">{{ model_types|length }} models · {{ calls|length }} calls</span>
+  <span class="badge">{{ model_types|length }} models</span>
 </div>
 
 <div class="container">
   <!-- Sidebar -->
   <div class="sidebar">
     <div class="card">
-      <div class="card-title">Select Earnings Call</div>
-
-      <label for="searchInput">Search</label>
-      <div class="search-wrap">
-        <input type="text" class="search-input" id="searchInput" placeholder="Search by ticker or date…">
-      </div>
-
-      <div class="call-list" id="callList">
-        {% for c in calls %}
-        <div class="call-item" data-id="{{ c.call_id }}" onclick="selectCall(this, '{{ c.call_id }}')">
-          <span class="ticker">{{ c.ticker }}</span>
-          <span class="date">{{ c.date }}</span>
-          <span class="utts">{{ c.n_utts }} utts</span>
-        </div>
-        {% endfor %}
-      </div>
-
-      <label for="modelSelect">Model</label>
-      <select id="modelSelect">
-        {% for m in model_types %}
-        <option value="{{ m }}" {% if m == 'early_fusion' %}selected{% endif %}>{{ m }}</option>
-        {% endfor %}
-      </select>
-
-      <button class="btn btn-primary" id="predictBtn" disabled onclick="predict()">
-        Run Prediction
-      </button>
-
-      <div class="divider">or</div>
+      <div class="card-title">Upload Audio</div>
 
       <label for="companyInput">Company Name</label>
       <input type="text" id="companyInput" placeholder="e.g., AAPL" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.85rem;outline:none;margin-bottom:14px;">
@@ -409,7 +349,18 @@
       <input type="file" id="fileInput" accept=".mp3,.wav,.m4a,.flac" style="margin-bottom:14px;">
 
       <label for="transcriptInput">Upload Transcript (Optional - for better accuracy)</label>
-      <input type="file" id="transcriptInput" accept=".txt" onchange="uploadFile()" style="font-size:0.75rem;">
+      <input type="file" id="transcriptInput" accept=".txt" style="font-size:0.75rem;margin-bottom:14px;">
+
+      <label for="modelSelect">Model</label>
+      <select id="modelSelect">
+        {% for m in model_types %}
+        <option value="{{ m }}" {% if m == 'early_fusion' %}selected{% endif %}>{{ m }}</option>
+        {% endfor %}
+      </select>
+
+      <button class="btn btn-primary" onclick="uploadFile()">
+        Run Prediction
+      </button>
     </div>
   </div>
 
@@ -417,30 +368,12 @@
   <div class="results-area" id="resultsArea">
     <div class="card empty-state" id="emptyState">
       <div class="icon">📊</div>
-      <p>Select an earnings call from the list or upload an audio file with company name. Optionally include a transcript (.txt) for better text analysis.</p>
+      <p>Upload an audio file with company name to predict post-earnings volatility. Optionally include a transcript (.txt) for better text analysis.</p>
     </div>
   </div>
 </div>
 
 <script>
-let selectedCallId = null;
-
-// Search filter
-document.getElementById('searchInput').addEventListener('input', function() {
-  const q = this.value.toLowerCase();
-  document.querySelectorAll('.call-item').forEach(item => {
-    const text = item.textContent.toLowerCase();
-    item.style.display = text.includes(q) ? '' : 'none';
-  });
-});
-
-function selectCall(el, callId) {
-  document.querySelectorAll('.call-item').forEach(i => i.classList.remove('selected'));
-  el.classList.add('selected');
-  selectedCallId = callId;
-  document.getElementById('predictBtn').disabled = false;
-}
-
 function showLoading() {
   document.getElementById('resultsArea').innerHTML = `
     <div class="card empty-state">
@@ -467,11 +400,14 @@ function renderResults(data) {
   const preds = (data.predictions && data.predictions[selected]) || {};
   const meta = data.meta || {};
 
-  let ticker = meta.ticker || (data.call_id ? data.call_id.split('_')[0] : 'UNKNOWN');
+  let ticker = meta.ticker || meta.company || (data.call_id ? data.call_id.split('_')[0] : 'UNKNOWN');
   let date = meta.date || '';
   let nUtts = meta.n_utterances || meta.segments || meta.source || '';
 
-  // Header
+  // Store ticker globally for TradingView button
+  window.currentTicker = ticker;
+
+  // Header with TradingView button
   let html = `<div class="card">
     <div class="result-header">
       <span class="ticker-big">${ticker}</span>
@@ -480,8 +416,29 @@ function renderResults(data) {
         <div style="font-size:0.75rem">${typeof nUtts === 'number' ? nUtts + ' utterances' : nUtts} · ${data.call_id || 'N/A'}</div>
       </div>
     </div>
+    <div class="action-bar">
+      <button onclick="toggleTradingView()" class="btn-tradingview">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M4 4h16v16H4V4zm2 2v12h12V6H6zm2 2h8v2H8V8zm0 4h8v2H8v-2z"/>
+        </svg>
+        <span id="tvButtonText">Show ${ticker} Chart</span>
+      </button>
+      <a href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent(ticker)}" target="_blank" class="btn-tradingview" style="background: linear-gradient(135deg, #374151, #1f2937);">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
+        </svg>
+        Open in New Tab
+      </a>
+    </div>
   </div>`;
 
+  // TradingView embedded chart (hidden by default)
+  html += `<div class="card" id="tradingviewChart">
+    <div class="card-title">Live Chart - ${ticker}</div>
+    <div class="tradingview-container">
+      <iframe src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_chart&symbol=${encodeURIComponent(ticker)}&interval=D&hidesidetoolbar=0&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=[]&theme=dark&style=1&timezone=Etc%2FUTC&withdateranges=1&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=en&utm_source=localhost&utm_medium=widget_new&utm_campaign=chart&utm_term=${encodeURIComponent(ticker)}" frameborder="0" allowtransparency="true" scrolling="no" allowfullscreen=""></iframe>
+    </div>
+  </div>`;
   // Primary prediction cards
   html += `<div class="card"><div class="card-title">Predicted Volatility Rank (${selected})</div>
   <div class="pred-grid">`;
@@ -541,20 +498,22 @@ function renderResults(data) {
   area.innerHTML = html;
 }
 
-function predict() {
-  if (!selectedCallId) return;
-  showLoading();
-  const model = document.getElementById('modelSelect').value;
-  const fd = new FormData();
-  fd.append('call_id', selectedCallId);
-  fd.append('model_type', model);
-  fetch('/predict', { method: 'POST', body: fd })
-    .then(r => r.json())
-    .then(data => {
-      if (data.error) { alert(data.error); return; }
-      renderResults(data);
-    })
-    .catch(err => alert('Error: ' + err));
+function toggleTradingView() {
+  const chart = document.getElementById('tradingviewChart');
+  const btnText = document.getElementById('tvButtonText');
+  const ticker = window.currentTicker || 'UNKNOWN';
+  
+  if (chart.classList.contains('visible')) {
+    chart.classList.remove('visible');
+    btnText.textContent = `Show ${ticker} Chart`;
+  } else {
+    chart.classList.add('visible');
+    btnText.textContent = `Hide ${ticker} Chart`;
+    // Scroll to chart
+    setTimeout(() => {
+      chart.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
+  }
 }
 
 function pollJob(jobId, elapsed) {
