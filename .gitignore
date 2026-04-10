@@ -1,6 +1,7 @@
 dataset/
-*.pt
 mmecv2/
 *.pyc
 .env
-FAST_INFERENCE.md
+data/**/*.pt
+!data/**/labels.csv
+!data/**/manifest.csv
