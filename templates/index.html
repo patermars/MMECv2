@@ -36,6 +36,11 @@
       align-items: center;
       justify-content: space-between;
       background: linear-gradient(180deg, rgba(99,102,241,0.06) 0%, transparent 100%);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+      background: rgba(10, 14, 23, 0.9);
     }
     .header h1 {
       font-size: 1.4rem;
@@ -45,15 +50,21 @@
       -webkit-text-fill-color: transparent;
       letter-spacing: -0.02em;
     }
-    .header .badge {
-      font-size: 0.7rem;
+    .header .model-badges {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .model-pill {
+      font-size: 0.65rem;
       font-weight: 500;
       background: var(--surface2);
       border: 1px solid var(--border);
-      padding: 4px 10px;
-      border-radius: 20px;
-      color: var(--text-dim);
+      padding: 3px 8px;
+      border-radius: 12px;
+      color: var(--text);
     }
+    .model-pill.loaded { border-color: var(--green); color: var(--green); }
 
     .container {
       max-width: 1100px;
@@ -91,7 +102,7 @@
       margin-top: 0;
     }
 
-    select, input[type="file"], input[type="text"] {
+    input[type="text"] {
       width: 100%;
       padding: 10px 12px;
       background: var(--surface2);
@@ -104,11 +115,66 @@
       transition: border-color 0.2s;
       margin-bottom: 14px;
     }
-    select:focus, input[type="file"]:focus, input[type="text"]:focus {
+    input[type="text"]:focus {
       border-color: var(--accent);
       box-shadow: 0 0 0 3px var(--accent-glow);
     }
-    select option { background: var(--surface); }
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-bottom: 14px;
+      background: var(--surface2);
+      position: relative;
+    }
+    .drop-zone:hover { border-color: var(--accent); background: rgba(99,102,241,0.05); transform: translateY(-1px); }
+    .drop-zone.dragover { border-color: var(--accent); background: rgba(99,102,241,0.15); border-style: solid; }
+    .drop-zone .icon { font-size: 2.5rem; margin-bottom: 8px; opacity: 0.6; }
+    .drop-zone .text { font-size: 0.8rem; color: var(--text-dim); }
+    .drop-zone .filename { font-size: 0.75rem; color: var(--accent); margin-top: 8px; font-weight: 500; display: block; }
+    .drop-zone input[type="file"] { display: none; }
+    .model-selector {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .model-pill-btn {
+      padding: 10px;
+      border: 2px solid var(--border);
+      border-radius: 20px;
+      background: var(--surface2);
+      color: var(--text-dim);
+      font-size: 0.7rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      position: relative;
+    }
+    .model-pill-btn:hover { border-color: var(--accent); color: var(--text); transform: translateY(-1px); }
+    .model-pill-btn.active { border-color: var(--accent); background: rgba(99,102,241,0.15); color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+    .model-pill-btn .tooltip {
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 0.65rem;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+      margin-bottom: 4px;
+      z-index: 10;
+    }
+    .model-pill-btn:hover .tooltip { opacity: 1; }
 
     .btn {
       width: 100%;
@@ -262,11 +328,28 @@
     .pred-card .value {
       font-size: 1.6rem;
       font-weight: 700;
-      margin-bottom: 4px;
+      margin-bottom: 8px;
+      transition: all 0.6s ease-out;
     }
     .pred-card .sub {
       font-size: 0.72rem;
       color: var(--text-dim);
+      margin-bottom: 8px;
+    }
+    .risk-gauge {
+      width: 100%;
+      height: 8px;
+      background: var(--surface2);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 8px;
+      position: relative;
+    }
+    .risk-gauge-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.8s ease-out;
+      background: linear-gradient(90deg, var(--green), var(--amber), var(--red));
     }
     .risk-low { color: var(--green); }
     .risk-med { color: var(--amber); }
@@ -295,6 +378,164 @@
     .comp-table tr:hover td { background: rgba(255,255,255,0.02); }
     .comp-table .model-name { font-weight: 600; }
     .comp-table .selected-row td { background: rgba(99,102,241,0.08); }
+    .risk-chip {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .risk-chip.low { background: rgba(16,185,129,0.15); color: var(--green); }
+    .risk-chip.moderate { background: rgba(245,158,11,0.15); color: var(--amber); }
+    .risk-chip.high { background: rgba(239,68,68,0.15); color: var(--red); }
+    .consensus-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-top: 14px;
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .consensus-box .icon { font-size: 1.2rem; }
+    .consensus-box .text { flex: 1; }
+    .info-tooltip {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      text-align: center;
+      line-height: 16px;
+      font-size: 0.7rem;
+      cursor: help;
+      margin-left: 6px;
+      color: var(--text-dim);
+      font-weight: 600;
+    }
+    .info-tooltip:hover { background: var(--accent); color: white; border-color: var(--accent); }
+    .info-box {
+      background: rgba(99,102,241,0.05);
+      border: 1px solid rgba(99,102,241,0.2);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-top: 12px;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+    .pred-vs-actual {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 12px;
+      padding: 12px 16px;
+      background: var(--surface2);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .pred-vs-actual .item { flex: 1; text-align: center; }
+    .pred-vs-actual .label { font-size: 0.7rem; color: var(--text-dim); display: block; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .pred-vs-actual .value { font-size: 1.3rem; font-weight: 700; }
+    .pred-vs-actual .delta { font-size: 0.8rem; margin-top: 4px; font-weight: 600; }
+    .pred-vs-actual .delta.positive { color: var(--green); }
+    .pred-vs-actual .delta.negative { color: var(--red); }
+    .pred-vs-actual .delta.neutral { color: var(--text-dim); }
+    .error-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .error-metric {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+    }
+    .error-metric .label { font-size: 0.7rem; color: var(--text-dim); display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .error-metric .value { font-size: 1.1rem; font-weight: 700; }
+    .error-metric .icon { font-size: 1.2rem; margin-bottom: 4px; }
+    .progress-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 16px;
+      font-size: 0.75rem;
+    }
+    .progress-step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-dim);
+      transition: all 0.3s;
+    }
+    .progress-step.active { color: var(--accent); }
+    .progress-step.completed { color: var(--green); }
+    .progress-step .num {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--surface2);
+      border: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+    .progress-step.active .num { border-color: var(--accent); background: rgba(99,102,241,0.15); }
+    .progress-step.completed .num { border-color: var(--green); background: rgba(16,185,129,0.15); }
+    .signal-quality {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 0;
+    }
+    .signal-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+    }
+    .signal-item .label { font-size: 0.65rem; color: var(--text-dim); display: block; margin-bottom: 4px; }
+    .signal-item .value { font-size: 0.9rem; font-weight: 600; }
+    .modality-contrib {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+      align-items: center;
+    }
+    .modality-contrib .bar {
+      flex: 1;
+      height: 28px;
+      border-radius: 8px;
+      display: flex;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .modality-contrib .segment {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: white;
+      transition: all 0.3s;
+    }
+    .modality-contrib .segment:hover { opacity: 0.8; }
+    .modality-contrib .legend {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      min-width: 80px;
+    }
 
     /* Actual labels */
     .actual-row {
@@ -311,6 +552,47 @@
     }
     .actual-chip .label { color: var(--text-dim); font-size: 0.68rem; display: block; margin-bottom: 2px; }
     .actual-chip .val { font-weight: 600; }
+    .uncertainty-indicator {
+      display: inline-block;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-left: 6px;
+      font-weight: 500;
+    }
+    .uncertainty-indicator.high { color: var(--red); }
+    .uncertainty-indicator.low { color: var(--green); }
+    .historical-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      margin-top: 10px;
+    }
+    .historical-table th {
+      text-align: left;
+      padding: 8px 12px;
+      font-weight: 600;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+      border-bottom: 1px solid var(--border);
+    }
+    .historical-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    .historical-table tr:hover td { background: rgba(255,255,255,0.02); }
+    .confidence-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .confidence-badge.high { background: rgba(16,185,129,0.15); color: var(--green); }
+    .confidence-badge.medium { background: rgba(245,158,11,0.15); color: var(--amber); }
+    .confidence-badge.low { background: rgba(239,68,68,0.15); color: var(--red); }
 
     .spinner {
       border: 3px solid var(--border);
@@ -333,7 +615,11 @@
 
 <div class="header">
   <h1>MMEC · Earnings Call Risk Predictor</h1>
-  <span class="badge">{{ model_types|length }} models</span>
+  <div class="model-badges">
+    {% for m in model_types %}
+    <span class="model-pill loaded">{{ m }} ✓</span>
+    {% endfor %}
+  </div>
 </div>
 
 <div class="container">
@@ -343,20 +629,38 @@
       <div class="card-title">Upload Audio</div>
 
       <label for="companyInput">Company Name</label>
-      <input type="text" id="companyInput" placeholder="e.g., AAPL" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.85rem;outline:none;margin-bottom:14px;">
+      <input type="text" id="companyInput" placeholder="e.g., AAPL">
 
-      <label for="fileInput">Upload Audio File</label>
-      <input type="file" id="fileInput" accept=".mp3,.wav,.m4a,.flac" style="margin-bottom:14px;">
+      <label>Audio File</label>
+      <div class="drop-zone" id="audioDropZone" onclick="document.getElementById('fileInput').click()">
+        <div class="icon">🎵</div>
+        <div class="text">Drag audio here or click to browse</div>
+        <div class="filename" id="audioFilename"></div>
+        <input type="file" id="fileInput" accept=".mp3,.wav,.m4a,.flac">
+      </div>
 
-      <label for="transcriptInput">Upload Transcript (Optional - for better accuracy)</label>
-      <input type="file" id="transcriptInput" accept=".txt" style="font-size:0.75rem;margin-bottom:14px;">
+      <label>Transcript (Optional)</label>
+      <div class="drop-zone" id="transcriptDropZone" onclick="document.getElementById('transcriptInput').click()">
+        <div class="icon" style="font-size:1.5rem;">📄</div>
+        <div class="text">Drag transcript or click to browse</div>
+        <div class="filename" id="transcriptFilename"></div>
+        <input type="file" id="transcriptInput" accept=".txt">
+      </div>
 
-      <label for="modelSelect">Model</label>
-      <select id="modelSelect">
+      <label>Model Type</label>
+      <div class="model-selector" id="modelSelector">
         {% for m in model_types %}
-        <option value="{{ m }}" {% if m == 'early_fusion' %}selected{% endif %}>{{ m }}</option>
+        <div class="model-pill-btn {% if m == 'cross_modal' %}active{% endif %}" data-model="{{ m }}" onclick="selectModel('{{ m }}')">
+          {{ m.replace('_', ' ').title() }}
+          <div class="tooltip">
+            {% if m == 'cross_modal' %}Text + Audio + Acoustic{% endif %}
+            {% if m == 'early_fusion' %}All modalities concatenated{% endif %}
+            {% if m == 'text_only' %}FinBERT embeddings only{% endif %}
+            {% if m == 'audio_only' %}Acoustic features only{% endif %}
+          </div>
+        </div>
         {% endfor %}
-      </select>
+      </div>
 
       <button class="btn btn-primary" onclick="uploadFile()">
         Run Prediction
@@ -374,6 +678,71 @@
 </div>
 
 <script>
+let selectedModel = 'cross_modal';
+
+function selectModel(model) {
+  selectedModel = model;
+  document.querySelectorAll('.model-pill-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.model === model);
+  });
+}
+
+// Drag and drop handlers
+function setupDropZone(dropZoneId, inputId, filenameId) {
+  const dropZone = document.getElementById(dropZoneId);
+  const input = document.getElementById(inputId);
+  const filename = document.getElementById(filenameId);
+
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, preventDefaults, false);
+  });
+
+  function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  ['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+  });
+
+  ['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+  });
+
+  dropZone.addEventListener('drop', (e) => {
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      input.files = files;
+      filename.textContent = files[0].name;
+    }
+  });
+
+  input.addEventListener('change', () => {
+    if (input.files.length > 0) {
+      filename.textContent = input.files[0].name;
+    }
+  });
+}
+
+setupDropZone('audioDropZone', 'fileInput', 'audioFilename');
+setupDropZone('transcriptDropZone', 'transcriptInput', 'transcriptFilename');
+
+function animateValue(element, start, end, duration) {
+  const startTime = performance.now();
+  const animate = (currentTime) => {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const easeOut = 1 - Math.pow(1 - progress, 3);
+    const current = start + (end - start) * easeOut;
+    element.textContent = (current * 100).toFixed(1) + '%';
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    }
+  };
+  requestAnimationFrame(animate);
+}
+
 function showLoading() {
   document.getElementById('resultsArea').innerHTML = `
     <div class="card empty-state">
@@ -394,6 +763,77 @@ function riskLabel(val) {
   return 'High Risk';
 }
 
+function riskChipClass(val) {
+  if (val < 0.35) return 'low';
+  if (val < 0.65) return 'moderate';
+  return 'high';
+}
+
+function calculateConsensus(predictions, window) {
+  const values = [];
+  for (const [model, preds] of Object.entries(predictions)) {
+    if (preds && preds[window] !== undefined) {
+      values.push(preds[window]);
+    }
+  }
+  if (values.length === 0) return null;
+  
+  const risks = values.map(v => {
+    if (v < 0.35) return 'low';
+    if (v < 0.65) return 'moderate';
+    return 'high';
+  });
+  
+  const counts = {};
+  risks.forEach(r => counts[r] = (counts[r] || 0) + 1);
+  const maxCount = Math.max(...Object.values(counts));
+  const consensus = Object.keys(counts).find(k => counts[k] === maxCount);
+  
+  return { consensus, count: maxCount, total: values.length, allSame: maxCount === values.length };
+}
+
+function calculateModalityContribution(predictions) {
+  const crossModal = predictions['cross_modal']?.['3-day'] || 0.5;
+  const textOnly = predictions['text_only']?.['3-day'] || 0.5;
+  const audioOnly = predictions['audio_only']?.['3-day'] || 0.5;
+  
+  const textStrength = Math.abs(textOnly - 0.5) * 100;
+  const audioStrength = Math.abs(audioOnly - 0.5) * 100;
+  const total = textStrength + audioStrength || 1;
+  
+  return {
+    text: Math.round((textStrength / total) * 100),
+    audio: Math.round((audioStrength / total) * 100),
+    textLabel: textStrength > 15 ? 'Strong' : textStrength > 8 ? 'Moderate' : 'Weak',
+    audioLabel: audioStrength > 15 ? 'Strong' : audioStrength > 8 ? 'Moderate' : 'Weak'
+  };
+}
+
+function calculateModelAgreement(predictions, window) {
+  const values = [];
+  for (const [model, preds] of Object.entries(predictions)) {
+    if (preds && preds[window] !== undefined) {
+      values.push(preds[window]);
+    }
+  }
+  if (values.length === 0) return null;
+  
+  const risks = values.map(v => {
+    if (v < 0.35) return 'low';
+    if (v < 0.65) return 'moderate';
+    return 'high';
+  });
+  
+  const counts = {};
+  risks.forEach(r => counts[r] = (counts[r] || 0) + 1);
+  const maxCount = Math.max(...Object.values(counts));
+  const totalModels = values.length;
+  
+  if (maxCount === totalModels) return 'high';
+  if (maxCount >= totalModels * 0.75) return 'medium';
+  return 'low';
+}
+
 function renderResults(data) {
   const area = document.getElementById('resultsArea');
   const selected = data.selected_model;
@@ -404,10 +844,8 @@ function renderResults(data) {
   let date = meta.date || '';
   let nUtts = meta.n_utterances || meta.segments || meta.source || '';
 
-  // Store ticker globally for TradingView button
   window.currentTicker = ticker;
 
-  // Header with TradingView button
   let html = `<div class="card">
     <div class="result-header">
       <span class="ticker-big">${ticker}</span>
@@ -432,16 +870,44 @@ function renderResults(data) {
     </div>
   </div>`;
 
-  // TradingView embedded chart (hidden by default)
   html += `<div class="card" id="tradingviewChart">
     <div class="card-title">Live Chart - ${ticker}</div>
     <div class="tradingview-container">
       <iframe src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_chart&symbol=${encodeURIComponent(ticker)}&interval=D&hidesidetoolbar=0&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=[]&theme=dark&style=1&timezone=Etc%2FUTC&withdateranges=1&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=en&utm_source=localhost&utm_medium=widget_new&utm_campaign=chart&utm_term=${encodeURIComponent(ticker)}" frameborder="0" allowtransparency="true" scrolling="no" allowfullscreen=""></iframe>
     </div>
   </div>`;
-  // Primary prediction cards
-  html += `<div class="card"><div class="card-title">Predicted Volatility Rank (${selected})</div>
-  <div class="pred-grid">`;
+
+  html += `<div class="card"><div class="card-title">Predicted Volatility Rank (${selected})
+    <span class="info-tooltip" title="Percentile rank: 73% means higher volatility than ~73% of historical calls">?</span>
+  </div>
+  <div class="info-box">
+    📊 <strong>What this means:</strong> The score is a rank percentile. For example, 73% means this call is predicted to have higher abnormal volatility than ~73% of historical earnings calls in the training data.
+  </div>`;
+  
+  if (data.predictions && Object.keys(data.predictions).length >= 3) {
+    const agreement3d = calculateModelAgreement(data.predictions, '3-day');
+    if (agreement3d) {
+      let agreementText = '';
+      let agreementIcon = '';
+      if (agreement3d === 'high') {
+        agreementText = 'All models agree on risk level';
+        agreementIcon = '✓';
+      } else if (agreement3d === 'medium') {
+        agreementText = 'Most models agree on risk level';
+        agreementIcon = '⚠';
+      } else {
+        agreementText = 'Models disagree — uncertain prediction';
+        agreementIcon = '⚡';
+      }
+      html += `<div style="margin-top:12px;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;gap:10px;font-size:0.8rem;">
+        <span style="font-size:1.1rem;">${agreementIcon}</span>
+        <span style="flex:1;">${agreementText}</span>
+        <span class="confidence-badge ${agreement3d}">${agreement3d === 'high' ? 'High Confidence' : agreement3d === 'medium' ? 'Medium Confidence' : 'Uncertain'}</span>
+      </div>`;
+    }
+  }
+  
+  html += `<div class="pred-grid">`;
   const windows = ['1-day', '3-day', '7-day'];
   const windowLabels = ['1-Day', '3-Day', '7-Day'];
   windows.forEach((w, i) => {
@@ -449,14 +915,27 @@ function renderResults(data) {
     if (v !== undefined && v !== null) {
       html += `<div class="pred-card">
         <div class="window-label">${windowLabels[i]} Volatility</div>
-        <div class="value ${riskClass(v)}">${(v * 100).toFixed(1)}%</div>
+        <div class="value ${riskClass(v)}" data-value="${v}">0.0%</div>
         <div class="sub">${riskLabel(v)}</div>
+        <div class="risk-gauge"><div class="risk-gauge-fill" style="width: 0%"></div></div>
       </div>`;
     }
   });
   html += `</div>`;
 
-  // Actual labels if available
+  if (data.acoustic_summary && Object.keys(data.acoustic_summary).length > 0) {
+    const ac = data.acoustic_summary;
+    html += `<div style="margin-top:16px">
+      <div class="card-title" style="margin-bottom:10px">Signal Quality (Acoustic Features)</div>
+      <div class="signal-quality">
+        <div class="signal-item"><span class="label">Mean Pitch</span><span class="value">${ac.mean_pitch?.toFixed(1) || 'N/A'} Hz</span></div>
+        <div class="signal-item"><span class="label">Energy (RMS)</span><span class="value">${ac.mean_energy?.toFixed(3) || 'N/A'}</span></div>
+        <div class="signal-item"><span class="label">Brightness</span><span class="value">${(ac.mean_brightness / 1000)?.toFixed(1) || 'N/A'} kHz</span></div>
+        <div class="signal-item"><span class="label">Pitch Variance</span><span class="value">${ac.pitch_variability?.toFixed(1) || 'N/A'} Hz</span></div>
+      </div>
+    </div>`;
+  }
+
   if (data.actuals && Object.keys(data.actuals).length > 0) {
     html += `<div style="margin-top:16px">
       <div class="card-title" style="margin-bottom:8px">Actual (Raw Abnormal Volatility)</div>
@@ -470,12 +949,11 @@ function renderResults(data) {
   }
   html += `</div>`;
 
-  // Model comparison table
   if (data.predictions && Object.keys(data.predictions).length > 0) {
     html += `<div class="card"><div class="card-title">Model Comparison</div>
     <table class="comp-table"><thead><tr>
       <th>Model</th>`;
-    windows.forEach((w, i) => { html += `<th>${windowLabels[i]}</th>`; });
+    windows.forEach((w, i) => { html += `<th>${windowLabels[i]}</th><th>Risk</th>`; });
     html += `</tr></thead><tbody>`;
     for (const [mtype, mpreds] of Object.entries(data.predictions)) {
       if (!mpreds) continue;
@@ -486,16 +964,71 @@ function renderResults(data) {
         const v = mpreds[w];
         if (v !== undefined && v !== null) {
           html += `<td class="${riskClass(v)}">${(v * 100).toFixed(1)}%</td>`;
+          html += `<td><span class="risk-chip ${riskChipClass(v)}">${riskLabel(v).replace(' Risk', '')}</span></td>`;
         } else {
-          html += `<td style="color:var(--text-dim)">—</td>`;
+          html += `<td style="color:var(--text-dim)">—</td><td>—</td>`;
         }
       });
       html += `</tr>`;
     }
-    html += `</tbody></table></div>`;
+    html += `</tbody></table>`;
+    
+    const consensus7d = calculateConsensus(data.predictions, '7-day');
+    const consensus3d = calculateConsensus(data.predictions, '3-day');
+    if (consensus7d || consensus3d) {
+      const c = consensus7d || consensus3d;
+      const window = consensus7d ? '7-day' : '3-day';
+      if (c.allSame) {
+        html += `<div class="consensus-box">
+          <span class="icon">✓</span>
+          <span class="text"><strong>Strong consensus:</strong> All ${c.total} models agree on <strong>${c.consensus.toUpperCase()}</strong> risk for ${window} window.</span>
+        </div>`;
+      } else if (c.count >= c.total * 0.75) {
+        html += `<div class="consensus-box">
+          <span class="icon">⚠</span>
+          <span class="text"><strong>Majority consensus:</strong> ${c.count} of ${c.total} models predict <strong>${c.consensus.toUpperCase()}</strong> risk on ${window} window.</span>
+        </div>`;
+      } else {
+        html += `<div class="consensus-box">
+          <span class="icon">⚡</span>
+          <span class="text"><strong>Models disagree</strong> on ${window} outlook — consider reviewing individual model predictions.</span>
+        </div>`;
+      }
+    }
+    
+    if (data.predictions['cross_modal'] && data.predictions['text_only'] && data.predictions['audio_only']) {
+      const contrib = calculateModalityContribution(data.predictions);
+      html += `<div style="margin-top:16px">
+        <div class="card-title" style="margin-bottom:10px">Modality Contribution</div>
+        <div class="modality-contrib">
+          <div class="bar">
+            <div class="segment" style="width:${contrib.text}%; background:#6366f1;">Text ${contrib.text}%</div>
+            <div class="segment" style="width:${contrib.audio}%; background:#10b981;">Audio ${contrib.audio}%</div>
+          </div>
+        </div>
+        <div style="font-size:0.75rem;color:var(--text-dim);margin-top:8px;">
+          Text signal: <strong>${contrib.textLabel}</strong> · Audio signal: <strong>${contrib.audioLabel}</strong>
+        </div>
+      </div>`;
+    }
+    
+    html += `</div>`;
   }
 
   area.innerHTML = html;
+
+  // Animate values and gauges
+  setTimeout(() => {
+    document.querySelectorAll('.pred-card').forEach(card => {
+      const valueEl = card.querySelector('.value');
+      const gaugeEl = card.querySelector('.risk-gauge-fill');
+      const targetValue = parseFloat(valueEl.dataset.value);
+      animateValue(valueEl, 0, targetValue, 600);
+      if (gaugeEl) {
+        gaugeEl.style.width = (targetValue * 100) + '%';
+      }
+    });
+  }, 50);
 }
 
 function toggleTradingView() {
@@ -509,22 +1042,49 @@ function toggleTradingView() {
   } else {
     chart.classList.add('visible');
     btnText.textContent = `Hide ${ticker} Chart`;
-    // Scroll to chart
     setTimeout(() => {
       chart.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, 100);
   }
 }
 
+let currentStep = 0;
+const steps = [
+  'Segmenting audio',
+  'Encoding with wav2vec2',
+  'Running FinBERT',
+  'Fusing modalities'
+];
+
+function updateProgressSteps() {
+  currentStep = (currentStep + 1) % steps.length;
+}
+
 function pollJob(jobId, elapsed) {
   const area = document.getElementById('resultsArea');
   const mins = Math.floor(elapsed / 60), secs = elapsed % 60;
+  
+  let stepsHtml = '<div class="progress-steps">';
+  steps.forEach((step, i) => {
+    const stepNum = (currentStep + i) % steps.length;
+    const isActive = i === 0;
+    const isCompleted = false;
+    stepsHtml += `<div class="progress-step ${isActive ? 'active' : ''}">
+      <div class="num">${stepNum + 1}</div>
+      <div>${steps[stepNum]}</div>
+    </div>`;
+  });
+  stepsHtml += '</div>';
+  
   area.innerHTML = `
     <div class="card empty-state">
       <div class="spinner"></div>
-      <p style="margin-top:16px">Processing audio… ${mins}m ${secs}s<br>
-      <span style="font-size:0.75rem;color:var(--text-dim)">Sampling ~30 segments · encoding with wav2vec2</span></p>
+      <p style="margin-top:16px">Processing audio… ${mins}m ${secs}s</p>
+      ${stepsHtml}
     </div>`;
+  
+  updateProgressSteps();
+  
   fetch(`/job/${jobId}`)
     .then(r => r.json())
     .then(data => {
@@ -546,16 +1106,16 @@ function uploadFile() {
   if (!file) { alert('Please select an audio file'); return; }
   if (!company) { alert('Please enter company name'); return; }
   showLoading();
-  const model = document.getElementById('modelSelect').value;
   const fd = new FormData();
   fd.append('file', file);
   fd.append('company_name', company);
   if (transcript) fd.append('transcript', transcript);
-  fd.append('model_type', model);
+  fd.append('model_type', selectedModel);
   fetch('/upload', { method: 'POST', body: fd })
     .then(r => r.json())
     .then(data => {
       if (data.error) { alert(data.error); return; }
+      currentStep = 0;
       pollJob(data.job_id, 0);
     })
     .catch(err => alert('Error: ' + err));

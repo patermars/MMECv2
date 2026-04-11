@@ -29,11 +29,15 @@ MODELS = {}
 
 # Load inference models once
 print("Loading models...")
+HIDDEN_DIMS = {"early_fusion": 64, "cross_modal": 32, "text_only": 256, "audio_only": 64}
 for mtype in MODEL_TYPES:
     ckpt = os.path.join(CHECKPOINTS_DIR, f"{mtype}_seed0.pt")
     if os.path.exists(ckpt):
         try:
-            model = build_model(CFG, mtype).to(DEVICE)
+            cfg_copy = {k: v.copy() if isinstance(v, dict) else v for k, v in CFG.items()}
+            cfg_copy["model"] = CFG["model"].copy()
+            cfg_copy["model"]["hidden_dim"] = HIDDEN_DIMS.get(mtype, 32)
+            model = build_model(cfg_copy, mtype).to(DEVICE)
             model.load_state_dict(torch.load(ckpt, map_location=DEVICE, weights_only=True))
             model.eval()
             MODELS[mtype] = model
@@ -160,10 +164,26 @@ def process_audio_file(audio_path, company_name, transcript_text=None):
     
     # Extract acoustic features (fast)
     acoustic_feats = []
+    raw_acoustic_stats = []  # Store raw features for summary
     for seg in segments:
         feat = extract_acoustic_features(seg, sr)
         acoustic_feats.append(feat)
+        # Collect raw stats (pitch, energy, spectral)
+        pitch = librosa.yin(seg, fmin=50, fmax=500, sr=sr)
+        pitch_mean = np.nanmean(pitch) if not np.all(np.isnan(pitch)) else 0
+        rms = librosa.feature.rms(y=seg).mean()
+        spectral_centroid = librosa.feature.spectral_centroid(y=seg, sr=sr).mean()
+        raw_acoustic_stats.append({'pitch': pitch_mean, 'energy': rms, 'brightness': spectral_centroid})
+    
     acoustic_t = torch.tensor(np.array(acoustic_feats), dtype=torch.float32)
+    
+    # Compute aggregate acoustic summary
+    acoustic_summary = {
+        'mean_pitch': float(np.mean([s['pitch'] for s in raw_acoustic_stats])),
+        'mean_energy': float(np.mean([s['energy'] for s in raw_acoustic_stats])),
+        'mean_brightness': float(np.mean([s['brightness'] for s in raw_acoustic_stats])),
+        'pitch_variability': float(np.std([s['pitch'] for s in raw_acoustic_stats]))
+    }
     
     # Normalize
     mean = acoustic_t.mean(dim=0, keepdim=True)
@@ -217,6 +237,7 @@ def process_audio_file(audio_path, company_name, transcript_text=None):
         "text_emb": text_embs,
         "wav_emb": wav_embs,
         "n_utterances": len(segments),
+        "acoustic_summary": acoustic_summary,
     }, None
 
 
@@ -257,6 +278,7 @@ def _process_upload_job(job_id, tmp_path, company_name, transcript_text, model_t
                 "selected_model": model_type,
                 "predictions": all_predictions,
                 "actuals": {},
+                "acoustic_summary": data.get("acoustic_summary", {}),
             }
         }
     except Exception as e:
