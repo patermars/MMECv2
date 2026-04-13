@@ -7,17 +7,17 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0a0e17;
-      --surface: #111827;
-      --surface2: #1a2235;
-      --border: #1f2937;
+      --bg: #F8F9FA;
+      --surface: #ffffff;
+      --surface2: #F3F4F6;
+      --border: #E5E7EB;
       --accent: #6366f1;
-      --accent-glow: rgba(99,102,241,0.25);
-      --green: #10b981;
-      --red: #ef4444;
-      --amber: #f59e0b;
-      --text: #e5e7eb;
-      --text-dim: #9ca3af;
+      --accent-glow: rgba(99,102,241,0.15);
+      --green: #059669;
+      --red: #dc2626;
+      --amber: #d97706;
+      --text: #111827;
+      --text-dim: #6B7280;
       --radius: 12px;
     }
     * { margin:0; padding:0; box-sizing:border-box; }
@@ -30,24 +30,20 @@
 
     /* Header */
     .header {
-      padding: 24px 32px;
+      padding: 20px 32px;
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: linear-gradient(180deg, rgba(99,102,241,0.06) 0%, transparent 100%);
+      background: #ffffff;
       position: sticky;
       top: 0;
       z-index: 100;
-      backdrop-filter: blur(10px);
-      background: rgba(10, 14, 23, 0.9);
     }
     .header h1 {
       font-size: 1.4rem;
       font-weight: 700;
-      background: linear-gradient(135deg, #818cf8, #6366f1, #4f46e5);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      color: #111827;
       letter-spacing: -0.02em;
     }
     .header .model-badges {
@@ -58,13 +54,24 @@
     .model-pill {
       font-size: 0.65rem;
       font-weight: 500;
-      background: var(--surface2);
+      background: #ffffff;
       border: 1px solid var(--border);
-      padding: 3px 8px;
+      padding: 3px 8px 3px 6px;
       border-radius: 12px;
       color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
     }
-    .model-pill.loaded { border-color: var(--green); color: var(--green); }
+    .model-pill.loaded::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      flex-shrink: 0;
+    }
 
     .container {
       max-width: 1100px;
@@ -80,23 +87,24 @@
 
     .card {
       background: var(--surface);
-      border: 1px solid var(--border);
+      border: none;
       border-radius: var(--radius);
-      padding: 20px;
+      padding: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     }
     .card-title {
       font-size: 0.75rem;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: var(--text-dim);
+      color: #9CA3AF;
       margin-bottom: 14px;
     }
 
     label {
       font-size: 0.8rem;
       font-weight: 500;
-      color: var(--text-dim);
+      color: #94A3B8;
       display: block;
       margin-bottom: 6px;
       margin-top: 0;
@@ -105,49 +113,49 @@
     input[type="text"] {
       width: 100%;
       padding: 10px 12px;
-      background: var(--surface2);
+      background: #ffffff;
       border: 1px solid var(--border);
       border-radius: 8px;
       color: var(--text);
       font-family: inherit;
-      font-size: 0.85rem;
+      font-size: 0.9rem;
       outline: none;
       transition: border-color 0.2s;
-      margin-bottom: 14px;
+      margin-bottom: 18px;
     }
     input[type="text"]:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-glow);
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
     }
     .drop-zone {
-      border: 2px dashed var(--border);
+      border: 2px dashed #E5E7EB;
       border-radius: 8px;
       padding: 24px;
       text-align: center;
       cursor: pointer;
       transition: all 0.3s;
-      margin-bottom: 14px;
-      background: var(--surface2);
+      margin-bottom: 18px;
+      background: #ffffff;
       position: relative;
     }
-    .drop-zone:hover { border-color: var(--accent); background: rgba(99,102,241,0.05); transform: translateY(-1px); }
-    .drop-zone.dragover { border-color: var(--accent); background: rgba(99,102,241,0.15); border-style: solid; }
-    .drop-zone .icon { font-size: 2.5rem; margin-bottom: 8px; opacity: 0.6; }
-    .drop-zone .text { font-size: 0.8rem; color: var(--text-dim); }
+    .drop-zone:hover { border-color: var(--accent); background: rgba(99,102,241,0.03); }
+    .drop-zone.dragover { border-color: var(--accent); background: rgba(99,102,241,0.06); border-style: solid; }
+    .drop-zone .icon { font-size: 2.5rem; margin-bottom: 8px; opacity: 0.5; filter: hue-rotate(220deg) saturate(0.6); }
+    .drop-zone .text { font-size: 0.85rem; color: var(--text-dim); }
     .drop-zone .filename { font-size: 0.75rem; color: var(--accent); margin-top: 8px; font-weight: 500; display: block; }
     .drop-zone input[type="file"] { display: none; }
     .model-selector {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
-      margin-bottom: 14px;
+      margin-bottom: 18px;
     }
     .model-pill-btn {
       padding: 10px;
-      border: 2px solid var(--border);
+      border: 1px solid var(--border);
       border-radius: 20px;
-      background: var(--surface2);
-      color: var(--text-dim);
+      background: #F3F4F6;
+      color: #374151;
       font-size: 0.7rem;
       font-weight: 600;
       cursor: pointer;
@@ -155,8 +163,8 @@
       text-align: center;
       position: relative;
     }
-    .model-pill-btn:hover { border-color: var(--accent); color: var(--text); transform: translateY(-1px); }
-    .model-pill-btn.active { border-color: var(--accent); background: rgba(99,102,241,0.15); color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+    .model-pill-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .model-pill-btn.active { border-color: var(--accent); background: #6366f1; color: #ffffff; box-shadow: none; }
     .model-pill-btn .tooltip {
       position: absolute;
       bottom: 100%;
@@ -180,22 +188,18 @@
       width: 100%;
       padding: 11px;
       border: none;
-      border-radius: 8px;
+      border-radius: 6px;
       font-family: inherit;
-      font-size: 0.85rem;
+      font-size: 0.9rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: background 0.2s;
     }
     .btn-primary {
-      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      background: #6366f1;
       color: white;
-      box-shadow: 0 4px 14px var(--accent-glow);
     }
-    .btn-primary:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 20px var(--accent-glow);
-    }
+    .btn-primary:hover { background: #4f46e5; }
     .btn-secondary {
       background: var(--surface2);
       color: var(--text);
@@ -203,32 +207,27 @@
       margin-top: 10px;
     }
     .btn-secondary:hover {
-      background: var(--surface);
-      border-color: var(--accent);
-      transform: translateY(-1px);
+      background: #E5E7EB;
+      border-color: #D1D5DB;
     }
 
     .btn-tradingview {
-      background: linear-gradient(135deg, #2962ff, #1e53e5);
+      background: #2962ff;
       color: white;
       display: inline-flex;
       align-items: center;
       gap: 8px;
       padding: 10px 18px;
       border: none;
-      border-radius: 8px;
+      border-radius: 6px;
       font-family: inherit;
-      font-size: 0.85rem;
+      font-size: 0.9rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: background 0.2s;
       text-decoration: none;
-      box-shadow: 0 4px 14px rgba(41, 98, 255, 0.25);
     }
-    .btn-tradingview:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(41, 98, 255, 0.35);
-    }
+    .btn-tradingview:hover { background: #1e53e5; }
     .btn-tradingview svg {
       width: 18px;
       height: 18px;
@@ -264,7 +263,6 @@
     .btn-primary:disabled {
       opacity: 0.5;
       cursor: not-allowed;
-      transform: none;
     }
 
     /* Results area */
@@ -277,10 +275,18 @@
       justify-content: center;
       height: 400px;
       text-align: center;
-      color: var(--text-dim);
+      color: #9CA3AF;
+      background-image: radial-gradient(circle, #E0E7FF 1px, transparent 1px);
+      background-size: 24px 24px;
+      background-position: 0 0;
     }
-    .empty-state .icon { font-size: 3rem; margin-bottom: 16px; opacity: 0.4; }
-    .empty-state p { font-size: 0.9rem; max-width: 300px; line-height: 1.6; }
+    .empty-state .icon { 
+      font-size: 3rem; 
+      margin-bottom: 16px; 
+      opacity: 0.3;
+      filter: hue-rotate(220deg) saturate(0.5);
+    }
+    .empty-state p { font-size: 0.95rem; max-width: 320px; line-height: 1.6; color: #6B7280; }
 
     .result-header {
       display: flex;
@@ -290,9 +296,7 @@
     .result-header .ticker-big {
       font-size: 1.8rem;
       font-weight: 700;
-      background: linear-gradient(135deg, #818cf8, #6366f1);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      color: #111827;
     }
     .result-header .meta-info {
       font-size: 0.85rem;
@@ -307,15 +311,11 @@
     }
     .pred-card {
       background: var(--surface);
-      border: 1px solid var(--border);
+      border: none;
       border-radius: var(--radius);
       padding: 18px;
       text-align: center;
-      transition: border-color 0.2s, transform 0.2s;
-    }
-    .pred-card:hover {
-      border-color: var(--accent);
-      transform: translateY(-2px);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     }
     .pred-card .window-label {
       font-size: 0.7rem;
@@ -339,7 +339,7 @@
     .risk-gauge {
       width: 100%;
       height: 8px;
-      background: var(--surface2);
+      background: #F3F4F6;
       border-radius: 4px;
       overflow: hidden;
       margin-top: 8px;
@@ -373,11 +373,11 @@
     }
     .comp-table td {
       padding: 10px 14px;
-      border-bottom: 1px solid rgba(255,255,255,0.03);
+      border-bottom: 1px solid var(--border);
     }
-    .comp-table tr:hover td { background: rgba(255,255,255,0.02); }
+    .comp-table tr:hover td { background: #F9FAFB; }
     .comp-table .model-name { font-weight: 600; }
-    .comp-table .selected-row td { background: rgba(99,102,241,0.08); }
+    .comp-table .selected-row td { background: rgba(99,102,241,0.05); }
     .risk-chip {
       display: inline-block;
       padding: 3px 10px;
@@ -390,7 +390,7 @@
     .risk-chip.moderate { background: rgba(245,158,11,0.15); color: var(--amber); }
     .risk-chip.high { background: rgba(239,68,68,0.15); color: var(--red); }
     .consensus-box {
-      background: var(--surface2);
+      background: #F9FAFB;
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 14px 16px;
@@ -407,7 +407,7 @@
       width: 16px;
       height: 16px;
       border-radius: 50%;
-      background: var(--surface2);
+      background: #F3F4F6;
       border: 1px solid var(--border);
       text-align: center;
       line-height: 16px;
@@ -419,13 +419,13 @@
     }
     .info-tooltip:hover { background: var(--accent); color: white; border-color: var(--accent); }
     .info-box {
-      background: rgba(99,102,241,0.05);
-      border: 1px solid rgba(99,102,241,0.2);
+      background: #EEF2FF;
+      border: 1px solid #C7D2FE;
       border-radius: 8px;
       padding: 12px 14px;
       margin-top: 12px;
       font-size: 0.75rem;
-      color: var(--text-dim);
+      color: #4338CA;
       line-height: 1.5;
     }
     .pred-vs-actual {
@@ -434,7 +434,7 @@
       gap: 16px;
       margin-top: 12px;
       padding: 12px 16px;
-      background: var(--surface2);
+      background: #F9FAFB;
       border-radius: 8px;
       border: 1px solid var(--border);
     }
@@ -452,7 +452,7 @@
       margin-top: 12px;
     }
     .error-metric {
-      background: var(--surface2);
+      background: #F9FAFB;
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 12px;
@@ -490,8 +490,8 @@
       font-weight: 600;
       transition: all 0.3s;
     }
-    .progress-step.active .num { border-color: var(--accent); background: rgba(99,102,241,0.15); }
-    .progress-step.completed .num { border-color: var(--green); background: rgba(16,185,129,0.15); }
+    .progress-step.active .num { border-color: var(--accent); background: #EEF2FF; }
+    .progress-step.completed .num { border-color: var(--green); background: #ECFDF5; }
     .signal-quality {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -499,7 +499,7 @@
       margin-top: 0;
     }
     .signal-item {
-      background: var(--surface2);
+      background: #F9FAFB;
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 10px;
@@ -544,7 +544,7 @@
       margin-top: 10px;
     }
     .actual-chip {
-      background: var(--surface2);
+      background: #F9FAFB;
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 8px 14px;
@@ -579,9 +579,9 @@
     }
     .historical-table td {
       padding: 8px 12px;
-      border-bottom: 1px solid rgba(255,255,255,0.03);
+      border-bottom: 1px solid var(--border);
     }
-    .historical-table tr:hover td { background: rgba(255,255,255,0.02); }
+    .historical-table tr:hover td { background: #F9FAFB; }
     .confidence-badge {
       display: inline-block;
       padding: 4px 10px;
@@ -595,7 +595,7 @@
     .confidence-badge.low { background: rgba(239,68,68,0.15); color: var(--red); }
 
     .spinner {
-      border: 3px solid var(--border);
+      border: 3px solid #E5E7EB;
       border-top: 3px solid var(--accent);
       border-radius: 50%;
       width: 28px;
@@ -617,7 +617,7 @@
   <h1>MMEC · Earnings Call Risk Predictor</h1>
   <div class="model-badges">
     {% for m in model_types %}
-    <span class="model-pill loaded">{{ m }} ✓</span>
+    <span class="model-pill loaded">{{ m }}</span>
     {% endfor %}
   </div>
 </div>
@@ -809,31 +809,6 @@ function calculateModalityContribution(predictions) {
   };
 }
 
-function calculateModelAgreement(predictions, window) {
-  const values = [];
-  for (const [model, preds] of Object.entries(predictions)) {
-    if (preds && preds[window] !== undefined) {
-      values.push(preds[window]);
-    }
-  }
-  if (values.length === 0) return null;
-  
-  const risks = values.map(v => {
-    if (v < 0.35) return 'low';
-    if (v < 0.65) return 'moderate';
-    return 'high';
-  });
-  
-  const counts = {};
-  risks.forEach(r => counts[r] = (counts[r] || 0) + 1);
-  const maxCount = Math.max(...Object.values(counts));
-  const totalModels = values.length;
-  
-  if (maxCount === totalModels) return 'high';
-  if (maxCount >= totalModels * 0.75) return 'medium';
-  return 'low';
-}
-
 function renderResults(data) {
   const area = document.getElementById('resultsArea');
   const selected = data.selected_model;
@@ -861,7 +836,7 @@ function renderResults(data) {
         </svg>
         <span id="tvButtonText">Show ${ticker} Chart</span>
       </button>
-      <a href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent(ticker)}" target="_blank" class="btn-tradingview" style="background: linear-gradient(135deg, #374151, #1f2937);">
+      <a href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent(ticker)}" target="_blank" class="btn-tradingview" style="background:#374151;">
         <svg viewBox="0 0 24 24" fill="currentColor">
           <path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
         </svg>
@@ -883,29 +858,6 @@ function renderResults(data) {
   <div class="info-box">
     📊 <strong>What this means:</strong> The score is a rank percentile. For example, 73% means this call is predicted to have higher abnormal volatility than ~73% of historical earnings calls in the training data.
   </div>`;
-  
-  if (data.predictions && Object.keys(data.predictions).length >= 3) {
-    const agreement3d = calculateModelAgreement(data.predictions, '3-day');
-    if (agreement3d) {
-      let agreementText = '';
-      let agreementIcon = '';
-      if (agreement3d === 'high') {
-        agreementText = 'All models agree on risk level';
-        agreementIcon = '✓';
-      } else if (agreement3d === 'medium') {
-        agreementText = 'Most models agree on risk level';
-        agreementIcon = '⚠';
-      } else {
-        agreementText = 'Models disagree — uncertain prediction';
-        agreementIcon = '⚡';
-      }
-      html += `<div style="margin-top:12px;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;gap:10px;font-size:0.8rem;">
-        <span style="font-size:1.1rem;">${agreementIcon}</span>
-        <span style="flex:1;">${agreementText}</span>
-        <span class="confidence-badge ${agreement3d}">${agreement3d === 'high' ? 'High Confidence' : agreement3d === 'medium' ? 'Medium Confidence' : 'Uncertain'}</span>
-      </div>`;
-    }
-  }
   
   html += `<div class="pred-grid">`;
   const windows = ['1-day', '3-day', '7-day'];
