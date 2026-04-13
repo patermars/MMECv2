@@ -1,0 +1,109 @@
+(mmecv2) D:\MMECv3>python -m src.train_kfold
+Device: cpu
+K-fold temporal CV: K=5, seeds=1
+
+Temporal folds:
+  Fold 0: 2017-04-24 to 2017-06-29
+  Fold 1: 2017-07-11 to 2017-10-23
+  Fold 2: 2017-10-24 to 2017-12-19
+  Fold 3: 2017-12-20 to 2018-02-27
+  Fold 4: 2018-02-28 to 2018-05-31
+
+============================================================
+Fold 0 | Seed 0
+  Train: ['2017-07-11 to 2017-10-23', '2017-10-24 to 2017-12-19', '2017-12-20 to 2018-02-27']
+  Val: 2018-02-28 to 2018-05-31
+  Test: 2017-04-24 to 2017-06-29
+============================================================
+  train: 349 | val: 114 | test: 204
+C:\Users\cl501_24\.conda\envs\mmecv2\lib\site-packages\torch\utils\data\dataloader.py:666: UserWarning: 'pin_memory' argument is set as true but no accelerator is found, then device pinned memory won't be used.
+  warnings.warn(warn_msg)
+C:\Users\cl501_24\.conda\envs\mmecv2\lib\site-packages\torch\nn\modules\transformer.py:515: UserWarning: The PyTorch API of nested tensors is in prototype stage and will change in the near future. We recommend specifying layout=torch.jagged when constructing a nested tensor, as this layout receives active development, has better operator coverage, and works with torch.compile. (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\NestedTensorImpl.cpp:182.)
+  output = torch._nested_tensor_from_mask(
+  E001 | train_rho=-0.0484 | val_rho=0.0514
+  E010 | train_rho=0.1314 | val_rho=0.0389
+  E020 | train_rho=0.1826 | val_rho=-0.0115
+  E030 | train_rho=0.2908 | val_rho=0.0483
+  Early stop at epoch 31
+  Test: rho=-0.0190 mae=1.05242
+
+Fold 0 avg: rho=-0.0190 mae=1.05242
+
+============================================================
+Fold 1 | Seed 0
+  Train: ['2017-10-24 to 2017-12-19', '2017-12-20 to 2018-02-27', '2018-02-28 to 2018-05-31']
+  Val: 2017-04-24 to 2017-06-29
+  Test: 2017-07-11 to 2017-10-23
+============================================================
+  train: 312 | val: 204 | test: 151
+C:\Users\cl501_24\.conda\envs\mmecv2\lib\site-packages\torch\utils\data\dataloader.py:666: UserWarning: 'pin_memory' argument is set as true but no accelerator is found, then device pinned memory won't be used.
+  warnings.warn(warn_msg)
+  E001 | train_rho=-0.0302 | val_rho=0.0704
+  E010 | train_rho=0.1594 | val_rho=-0.1794
+  E020 | train_rho=0.3786 | val_rho=-0.1869
+  Early stop at epoch 26
+  Test: rho=-0.1640 mae=0.37374
+
+Fold 1 avg: rho=-0.1640 mae=0.37374
+
+============================================================
+Fold 2 | Seed 0
+  Train: ['2017-04-24 to 2017-06-29', '2017-12-20 to 2018-02-27', '2018-02-28 to 2018-05-31']
+  Val: 2017-07-11 to 2017-10-23
+  Test: 2017-10-24 to 2017-12-19
+============================================================
+  train: 667 | val: 151 | test: 116
+C:\Users\cl501_24\.conda\envs\mmecv2\lib\site-packages\torch\utils\data\dataloader.py:666: UserWarning: 'pin_memory' argument is set as true but no accelerator is found, then device pinned memory won't be used.
+  warnings.warn(warn_msg)
+  E001 | train_rho=-0.0651 | val_rho=-0.0513
+  E010 | train_rho=0.1179 | val_rho=0.1588
+  E020 | train_rho=0.2244 | val_rho=0.3043
+  E030 | train_rho=0.3488 | val_rho=0.3898
+  E040 | train_rho=0.4051 | val_rho=0.5033
+  E050 | train_rho=0.4957 | val_rho=0.5672
+  Test: rho=0.4531 mae=0.46850
+
+Fold 2 avg: rho=0.4531 mae=0.46850
+
+============================================================
+Fold 3 | Seed 0
+  Train: ['2017-04-24 to 2017-06-29', '2017-07-11 to 2017-10-23', '2018-02-28 to 2018-05-31']
+  Val: 2017-10-24 to 2017-12-19
+  Test: 2017-12-20 to 2018-02-27
+============================================================
+  train: 667 | val: 116 | test: 82
+C:\Users\cl501_24\.conda\envs\mmecv2\lib\site-packages\torch\utils\data\dataloader.py:666: UserWarning: 'pin_memory' argument is set as true but no accelerator is found, then device pinned memory won't be used.
+  warnings.warn(warn_msg)
+  E001 | train_rho=-0.0651 | val_rho=-0.0187
+  E010 | train_rho=0.1179 | val_rho=0.0605
+  E020 | train_rho=0.2244 | val_rho=0.2043
+  E030 | train_rho=0.3488 | val_rho=0.2604
+  E040 | train_rho=0.4051 | val_rho=0.3638
+  E050 | train_rho=0.4957 | val_rho=0.4554
+  Test: rho=0.6690 mae=0.55339
+
+Fold 3 avg: rho=0.6690 mae=0.55339
+
+============================================================
+Fold 4 | Seed 0
+  Train: ['2017-04-24 to 2017-06-29', '2017-07-11 to 2017-10-23', '2017-10-24 to 2017-12-19']
+  Val: 2017-12-20 to 2018-02-27
+  Test: 2018-02-28 to 2018-05-31
+============================================================
+  train: 471 | val: 82 | test: 114
+C:\Users\cl501_24\.conda\envs\mmecv2\lib\site-packages\torch\utils\data\dataloader.py:666: UserWarning: 'pin_memory' argument is set as true but no accelerator is found, then device pinned memory won't be used.
+  warnings.warn(warn_msg)
+  E001 | train_rho=-0.1404 | val_rho=0.1400
+  E010 | train_rho=0.1014 | val_rho=-0.1696
+  E020 | train_rho=0.2228 | val_rho=-0.1775
+  Early stop at epoch 26
+  Test: rho=0.0020 mae=0.93650
+
+Fold 4 avg: rho=0.0020 mae=0.93650
+
+============================================================
+K-Fold CV Results (K=5)
+============================================================
+  spearman: 0.18820 ± 0.31716
+  mae: 0.67691 ± 0.26796
+  mse: 0.60209 ± 0.39913
