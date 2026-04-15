@@ -43,7 +43,17 @@ for mtype in MODEL_TYPES:
             MODELS[mtype] = model
             print(f"  ✓ Loaded {mtype}")
         except Exception as e:
-            print(f"  ✗ Failed to load {mtype}: {e}")
+            # Try loading with n_targets=1 for backward compatibility
+            try:
+                cfg_copy["label"] = CFG["label"].copy()
+                cfg_copy["label"]["multi_task"] = False
+                model = build_model(cfg_copy, mtype).to(DEVICE)
+                model.load_state_dict(torch.load(ckpt, map_location=DEVICE, weights_only=True))
+                model.eval()
+                MODELS[mtype] = model
+                print(f"  ✓ Loaded {mtype} (single-task)")
+            except Exception as e2:
+                print(f"  ✗ Failed to load {mtype}: {e}")
 
 # Load text and audio encoders once
 print("Loading encoders...")

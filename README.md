@@ -4,131 +4,71 @@
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg)](https://pytorch.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A deep learning system that predicts post-earnings stock volatility by analyzing earnings call audio and transcripts. The model fuses acoustic stress signals (pitch, jitter, shimmer, HNR) with NLP text embeddings (FinBERT) and wav2vec2 audio representations using cross-modal attention.
-
-## Overview
-
-This project demonstrates that vocal stress patterns and linguistic sentiment during earnings calls contain predictive signals for subsequent stock price volatility. The model achieves strong rank correlation (Spearman ρ) by learning to identify moments where acoustic stress diverges from textual sentiment.
-
-### Key Features
-
-- **Multi-modal fusion**: Combines 29D acoustic features, 768D FinBERT text embeddings, and 768D wav2vec2 audio embeddings
-- **Cross-modal attention**: Text queries attend to acoustic and audio features to capture sentiment-stress divergence
-- **Rank-optimized training**: Custom HuberRank loss maximizes Spearman correlation for relative risk ordering
-- **Web interface**: Flask app with async job processing for real-time predictions on uploaded audio
-- **Temporal validation**: Strict train/val/test splits prevent data leakage (2017-04 to 2018-06)
+A deep learning system that predicts post-earnings stock volatility by fusing acoustic stress signals, NLP text embeddings, and audio representations from earnings call transcripts and audio.
 
 ## Architecture
 
-```
-┌─────────────────────┐
-│ Acoustic Features   │ (29D: pitch, jitter, shimmer, HNR, MFCCs)
-│ (Praat + librosa)   │
-└──────────┬──────────┘
-           │
-           ├─────► Projection ──┐
-           │                    │
-┌──────────▼──────────┐         │
-│ Text Embeddings     │         ├──► Cross-Modal Attention
-│ (FinBERT)           │ (768D)  │         │
-└──────────┬──────────┘         │         │
-           │                    │         ▼
-           └────────────────────┘    Transformer Encoder
-                                          │
-┌─────────────────────┐                  │
-│ Audio Embeddings    │                  ▼
-│ (wav2vec2-base)     │ (768D) ──► Mean Pooling
-└─────────────────────┘                  │
-                                          ▼
-                                     MLP Head
-                                          │
-                                          ▼
-                              [1-day, 3-day, 7-day volatility]
-```
+![Architecture](assets/architecture.png)
 
-## Installation
+The model combines three modalities through cross-modal attention:
+- **Acoustic Features** (29D): Pitch, jitter, shimmer, HNR, MFCCs extracted via Praat/librosa
+- **Text Embeddings** (768D): FinBERT domain-specific financial sentiment
+- **Audio Embeddings** (768D): wav2vec2 self-supervised speech representations
 
-### Requirements
+Cross-attention allows text queries to attend to acoustic/audio features, capturing sentiment-stress divergence patterns predictive of volatility.
 
-- Python 3.8+
-- PyTorch 2.0+
-- CUDA (optional, for GPU acceleration)
+## Results
 
-### Setup
+### Model Comparison
 
-```bash
-# Clone repository
-git clone https://github.com/yourusername/mmec-volatility.git
-cd mmec-volatility
+![Ablation Study](assets/ablation_study_chart.png)
 
-# Install dependencies
-pip install -r requirements.txt
-```
+The cross-modal attention architecture outperforms all baselines, achieving **Spearman ρ = 0.42** on test data. Multi-modal fusion provides a 35% improvement over text-only models.
+
+### Literature Comparison
+
+![Literature Comparison](assets/literature_comparison_chart.png)
+
+Our approach achieves competitive performance with state-of-the-art methods while using a simpler architecture and publicly available data.
 
 ## Quick Start
 
-### Web Application
+### Installation
 
-Launch the Flask web interface for interactive predictions:
+```bash
+pip install -r requirements.txt
+```
+
+### Web Application
 
 ```bash
 python app.py
 ```
 
 Navigate to `http://localhost:5000` to:
-- Select from preprocessed earnings calls in the dataset
+- Select preprocessed earnings calls from the dataset
 - Upload custom audio files (MP3, WAV, M4A, FLAC)
-- Optionally include transcripts for improved text analysis
-- View predictions from all model variants (cross-modal, early fusion, text-only, audio-only)
+- View predictions from all model variants
+- Compare with actual volatility outcomes
 
-**Note**: Uploaded audio is processed asynchronously. The app samples 30 uniformly-spaced segments (~15 minutes of audio) for fast inference while maintaining representative coverage.
+### Training Pipeline
 
-## Training Pipeline
-
-### 1. Preprocess Data
-
-Encode audio and text with pretrained models (requires GPU for efficiency):
-
+**1. Preprocess Data**
 ```bash
-# Quick test (5 calls)
-python -m src.preprocess --max_calls 5
-
-# Full dataset
-python -m src.preprocess
+# Extract features from raw audio and transcripts
+python -m src.preprocess --max_calls 5  # Quick test
+python -m src.preprocess                # Full dataset
 ```
 
-**Output**: `data/processed/{call_id}.pt` files containing:
-- Acoustic features (29D per utterance)
-- FinBERT embeddings (768D per utterance)
-- wav2vec2 embeddings (768D per utterance)
-- Metadata (ticker, date, utterance count)
-
-### 2. Build Labels
-
-Compute abnormal volatility targets using market model regression:
-
+**2. Build Labels**
 ```bash
-# Quick test
-python -m src.label_builder --max_calls 5
-
-# Full dataset (8 parallel workers)
+# Compute abnormal volatility using market model
 python -m src.label_builder --workers 8
 ```
 
-**Output**: `data/processed/labels_clean.csv` with:
-- Alpha, beta, R² from market model (200-day estimation window)
-- Abnormal returns and volatility for 1/3/7-day event windows
-- Automatic filtering of degenerate cases (zero volatility, failed fetches, outliers)
-
-**Data sources**: Multi-source fallback (yfinance → Tiingo → FMP → Alpha Vantage → Polygon → Quandl)
-
-### 3. Train Models
-
+**3. Train Models**
 ```bash
-# Quick validation (1 epoch, 1 seed)
-python -m src.train --epochs 1 --seeds 1
-
-# Full training (50 epochs, 5-seed ensemble)
+# Train cross-modal model (50 epochs, 5-seed ensemble)
 python -m src.train --model_type cross_modal
 
 # Ablation studies
@@ -137,31 +77,14 @@ python -m src.train --model_type text_only
 python -m src.train --model_type audio_only
 ```
 
-**Output**: `checkpoints/{model_type}_seed{n}.pt`
-
-**Training details**:
-- Loss: HuberRank (Huber + differentiable rank correlation)
-- Optimizer: AdamW (lr=1e-4, weight_decay=1e-2)
-- Scheduler: CosineAnnealingWarmRestarts (T_0=10)
-- Early stopping: 25 epochs patience on validation Spearman ρ
-- Multi-task: Joint prediction of 1/3/7-day volatility with primary task weighting
-
-### 4. Evaluate
-
+**4. Evaluate**
 ```bash
 python -m src.evaluate --checkpoint checkpoints/cross_modal_seed0.pt
 ```
 
-**Metrics**:
-- Spearman ρ (rank correlation)
-- Kendall τ (pairwise concordance)
-- MAE, RMSE (absolute error)
-- Top-quartile hit rate (high-risk identification)
-- Ablation comparison table
-
 ## Configuration
 
-All hyperparameters are defined in `configs/default.yaml`:
+Key hyperparameters in `configs/default.yaml`:
 
 | Parameter | Value | Description |
 |-----------|-------|-------------|
@@ -173,47 +96,24 @@ All hyperparameters are defined in `configs/default.yaml`:
 | `batch_size` | 8 | Training batch size |
 | `epochs` | 50 | Maximum epochs |
 | `patience` | 25 | Early stopping patience |
-| `estimation_window` | 200 | Days for market model estimation |
-| `event_windows` | [1, 3, 7] | Post-call volatility windows |
 
 ## Dataset
 
-The model is trained on the **MAEC dataset** (S&P 1500 earnings calls, 2017-2018):
-
+Trained on **MAEC dataset** (S&P 1500 earnings calls, 2017-2018):
 - **Train**: 2017-04-24 to 2017-10-31
 - **Validation**: 2017-11-01 to 2017-12-31
 - **Test**: 2018-01-01 to 2018-06-21
 
-Each call includes:
-- Pre-segmented utterance audio (WAV)
-- Praat-extracted acoustic features (29D per utterance)
-- Transcripts with speaker labels
-- Ticker, date, and metadata
+Each call includes pre-segmented utterance audio, Praat-extracted acoustic features, transcripts with speaker labels, and metadata.
 
 ## Model Variants
 
-| Model | Description | Parameters |
-|-------|-------------|------------|
-| `cross_modal` | Cross-attention fusion (text queries → acoustic/audio keys) | ~500K |
-| `early_fusion` | Concatenate all modalities → MLP | ~400K |
-| `text_only` | FinBERT embeddings only | ~100K |
-| `audio_only` | Acoustic features only | ~50K |
-
-## Results
-
-Typical performance on test set (5-seed ensemble):
-
-| Model | Spearman ρ | MAE | Top-Quartile Hit Rate |
-|-------|------------|-----|----------------------|
-| Cross-Modal | 0.42 ± 0.03 | 0.018 ± 0.001 | 68% ± 2% |
-| Early Fusion | 0.38 ± 0.04 | 0.019 ± 0.002 | 64% ± 3% |
-| Text Only | 0.31 ± 0.05 | 0.021 ± 0.002 | 58% ± 4% |
-| Audio Only | 0.24 ± 0.06 | 0.023 ± 0.003 | 52% ± 5% |
-
-**Key findings**:
-- Cross-modal attention outperforms early fusion by capturing sentiment-stress divergence
-- Acoustic features alone provide meaningful signal (ρ=0.24)
-- Multi-modal fusion yields 35% improvement over text-only baseline
+| Model | Description | Spearman ρ | MAE |
+|-------|-------------|------------|-----|
+| `cross_modal` | Cross-attention fusion | 0.42 ± 0.03 | 0.018 ± 0.001 |
+| `early_fusion` | Concatenate all modalities | 0.38 ± 0.04 | 0.019 ± 0.002 |
+| `text_only` | FinBERT embeddings only | 0.31 ± 0.05 | 0.021 ± 0.002 |
+| `audio_only` | Acoustic features only | 0.24 ± 0.06 | 0.023 ± 0.003 |
 
 ## Project Structure
 
@@ -223,25 +123,46 @@ MMECv3/
 ├── configs/
 │   └── default.yaml            # Hyperparameters
 ├── src/
-│   ├── preprocess.py           # Feature extraction pipeline
-│   ├── label_builder.py        # Abnormal volatility computation
+│   ├── preprocess.py           # Feature extraction
+│   ├── label_builder.py        # Volatility computation
 │   ├── train.py                # Training loop
 │   ├── evaluate.py             # Evaluation metrics
 │   ├── model.py                # Model architectures
-│   ├── dataset.py              # PyTorch dataset/dataloader
-│   └── data_sources.py         # Multi-source stock data fetcher
-├── templates/
-│   └── index.html              # Web UI
+│   ├── dataset.py              # PyTorch dataset
+│   └── data_sources.py         # Multi-source stock data
+├── assets/
+│   ├── architecture.png        # Model diagram
+│   ├── ablation_study_chart.png
+│   └── literature_comparison_chart.png
 ├── data/
-│   ├── processed/              # Preprocessed .pt files
-│   └── dataset/                # Raw MAEC data (not included)
+│   └── processed/              # Preprocessed .pt files
 ├── checkpoints/                # Trained model weights
 └── requirements.txt
 ```
 
-## Citation
+## API Keys (Optional)
 
-If you use this code in your research, please cite:
+The label builder supports multiple stock data sources with automatic fallback. See [API Keys Guide](assets/API_KEYS_GUIDE.md) for setup instructions.
+
+Free sources (no key required):
+- yfinance (default)
+
+Optional paid/freemium sources:
+- Tiingo (recommended, 500 tickers free)
+- Financial Modeling Prep (250 calls/day)
+- Alpha Vantage (500 calls/day)
+- Polygon.io
+- Quandl/Nasdaq Data Link
+
+## Key Features
+
+- **HuberRank Loss**: Custom loss combining Huber regression with differentiable rank correlation to optimize Spearman ρ
+- **Multi-task Learning**: Joint prediction of 1/3/7-day volatility with primary task weighting
+- **Temporal Validation**: Strict chronological splits prevent data leakage
+- **Async Processing**: Web app processes uploaded audio asynchronously with progress tracking
+- **Multi-source Data**: Automatic fallback across 6 stock data providers
+
+## Citation
 
 ```bibtex
 @misc{mmec2024,
@@ -252,17 +173,10 @@ If you use this code in your research, please cite:
 }
 ```
 
-## Related Work
-
-- **Mayew & Venkatachalam (2012)**: "The Power of Voice: Managerial Affective States and Future Firm Performance" - Pioneering work on vocal cues in earnings calls
-- **Qin & Yang (2019)**: "What You Say and How You Say It Matters" - Multimodal analysis of earnings calls
-- **FinBERT**: Domain-specific BERT for financial sentiment analysis
-- **wav2vec2**: Self-supervised speech representation learning
-
 ## License
 
 MIT License - see LICENSE file for details.
 
 ## Disclaimer
 
-This project is for research and educational purposes only. It is not financial advice. Past performance does not guarantee future results. Always conduct your own due diligence before making investment decisions.
+This project is for research and educational purposes only. Not financial advice. Past performance does not guarantee future results.
