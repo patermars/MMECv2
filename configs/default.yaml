@@ -48,7 +48,7 @@ splits:
 label:
   estimation_window: 200
   event_windows: [1, 3, 7]
-  primary_target: "abnormal_vol_7d"
+  primary_target: "abnormal_vol_3d"
   filter_degenerate: true
   filter_zeros: true
   rank_transform: true
