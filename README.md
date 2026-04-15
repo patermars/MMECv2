@@ -167,9 +167,9 @@ Optional paid/freemium sources:
 ```bibtex
 @misc{mmec2024,
   title={Multi-Modal Earnings Call Volatility Prediction},
-  author={Your Name},
-  year={2024},
-  url={https://github.com/yourusername/mmec-volatility}
+  author={Aryan Kumar Sinha},
+  year={2026},
+  url={https://github.com/PaterMars/mmec-volatility}
 }
 ```
 
