@@ -162,16 +162,6 @@ Optional paid/freemium sources:
 - **Async Processing**: Web app processes uploaded audio asynchronously with progress tracking
 - **Multi-source Data**: Automatic fallback across 6 stock data providers
 
-## Citation
-
-```bibtex
-@misc{mmec2024,
-  title={Multi-Modal Earnings Call Volatility Prediction},
-  author={Aryan Kumar Sinha},
-  year={2026},
-  url={https://github.com/PaterMars/mmec-volatility}
-}
-```
 
 ## License
 
